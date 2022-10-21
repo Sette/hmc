@@ -1,1 +1,1 @@
-# fma_hc
+# Repositório dos experimentos de classificação hierarquica utilizando fma e essentia.
