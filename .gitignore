@@ -351,3 +351,6 @@ MigrationBackup/
 
 # FMA
 *.sig
+
+# Tfrecords
+*.tfrecords
