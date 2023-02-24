@@ -29,8 +29,8 @@ from sklearn.model_selection import train_test_split
 args = pd.Series({
     "root_dir":"/mnt/disks/data/",
     "embeddings":"music_style",
-    "train_id": "global_mini_test",
-    'sample_size':0.01
+    "train_id": "global_sample_test",
+    'sample_size':0.1
 })
 
 
@@ -334,6 +334,28 @@ def parse_single_music(data,music,labels):
 
 # In[24]:
 
+def process_df(df,i,count,batch_size,tfrecords_path):
+    batch_df = df[i:i+batch_size]
+        
+    tqdm.pandas()
+
+    X = batch_df.file_path.progress_apply(lambda x: extract_feature(x,model))   
+
+    print("Extraiu as features")
+
+    batch_df = batch_df[['first_genre_id_label']]
+
+
+    tfrecords = [parse_single_music(data, x,labels) for data, x in zip(batch_df.values, X)]
+
+    path = os.path.join(tfrecords_path,f"{str(count).zfill(10)}.tfrecord")
+
+    #with tf.python_io.TFRecordWriter(path) as writer:
+    with tf.io.TFRecordWriter(path) as writer:
+        for tfrecord in tfrecords:
+            writer.write(tfrecord.SerializeToString())
+
+    print(f"{count} {len(tfrecords)} {path}")
 
 
 def generate_tf_records(df,labels,model,filename="train"):
@@ -347,34 +369,10 @@ def generate_tf_records(df,labels,model,filename="train"):
     count = 0
     total = ceil(len(df) / batch_size)
     
-    for i in range(0, len(df), batch_size):
-        batch_df = df[i:i+batch_size]
-        
-        tqdm.pandas()
-        
-        X = batch_df.file_path.progress_apply(lambda x: extract_feature(x,model))   
-        
-        print("Extraiu as features")
-        
-        batch_df = batch_df[['first_genre_id_label']]
-        
-        
-        tfrecords = [parse_single_music(data, x,labels) for data, x in zip(batch_df.values, X)]
-        
-        path = os.path.join(tfrecords_path,f"{str(count).zfill(10)}.tfrecord")
-
-        #with tf.python_io.TFRecordWriter(path) as writer:
-        with tf.io.TFRecordWriter(path) as writer:
-            for tfrecord in tfrecords:
-                writer.write(tfrecord.SerializeToString())
-
-        print(f"{count} {len(tfrecords)} {path}")
-        count += 1
-        print(f"{count}/{total} batchs / {count * batch_size} processed")
-
-    print(f"{count}/{total} batchs / {len(df)} processed")
-
-
+    with Parallel(n_jobs=6, require='sharedmem') as para:
+        print("Estamos usando paralelismo!!!")
+        para(delayed(process_df)(df,i,count,batch_size,tfrecords_path) for count,i in enumerate(range(0, len(df), batch_size)))
+    
 # In[25]:
 
 
@@ -404,20 +402,18 @@ extract_feature(df.file_path.iloc[2],model)
 
 
 
-dataset_names = ["train","test","validation"]
+dataset_names = ["train","test","val"]
 
 datasets = [X_train,X_test,X_validation]
 
-
-generate_tf_records(X_validation.iloc[:10],labels,model,filename="val")
 
 
 # In[ ]:
 
 
-# with Parallel(n_jobs=3, require='sharedmem') as para:
-#     print("Estamos usando paralelismo!!!")
-#     para(delayed(generate_tf_records)(dataset,labels,model,dataset_name) for (dataset_name,dataset) in zip(dataset_names,datasets))
+with Parallel(n_jobs=3, require='sharedmem') as para:
+    print("Estamos usando paralelismo!!!")
+    para(delayed(generate_tf_records)(dataset,labels,model,dataset_name) for (dataset_name,dataset) in zip(dataset_names,datasets))
 
 
 # In[ ]:
