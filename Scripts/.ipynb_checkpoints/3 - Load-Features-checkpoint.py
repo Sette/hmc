@@ -1,31 +1,70 @@
 
 import tensorflow as tf
+import json
+import os
+import pandas as pd
+args = pd.Series({
+    "root_dir":"/mnt/disks/data/",
+    "embeddings":"music_style",
+    "train_id": "global_test_batch",
+    'sample_size':1.0
+})
 
 
-def _bytes_feature(value):
-    """Returns a bytes_list from a string / byte."""
-    if isinstance(value, type(tf.constant(0))): # if value ist tensor
-        value = value.numpy() # get value of tensor
-    return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+# In[3]:
 
-def _float_feature(value):
-  """Returns a floast_list from a float / double."""
-  return tf.train.Feature(float_list=tf.train.FloatList(value=[value]))
 
-def _int64_feature(value):
-  """Returns an int64_list from a bool / enum / int / uint."""
-  return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
-def serialize_array(array):
-  array = tf.io.serialize_tensor(array)
-  return array
+
+job_path = "/mnt/disks/data/fma/trains"
+
+
+# In[15]:
+
+
+train_path = os.path.join(job_path,args.train_id)
+
+
+# In[16]:
+
+
+base_path = os.path.join(args.root_dir,"fma")
+
+
+# In[17]:
+
+
+models_path = os.path.join(args.root_dir,"models")
+
+
+# In[18]:
+
+
+metadata_file = os.path.join(train_path,"metadata.json")
+
+
+labels_path = os.path.join(train_path,"labels.json")
+
+
+def __load_json__(path):
+    with open(path, 'r') as f:
+        tmp = json.loads(f.read())
+
+    return tmp
+
+
+labels = __load_json__(labels_path)
+
+metadata = __load_json__(metadata_file)
+
+
 
 
 def parse_tfr_element(element):
     #use the same structure as above; it's kinda an outline of the structure we now want to create
     data = {
         'emb' : tf.io.FixedLenFeature([], tf.string),
-        'label' : tf.io.FixedLenFeature([], tf.int64)
+        'label' : tf.io.FixedLenFeature([136], tf.int64)
     }
 
 
@@ -52,7 +91,7 @@ def get_dataset(filename):
     return dataset
 
 
-dataset = get_dataset("fma_test.tfrecords")
+dataset = get_dataset("/mnt/disks/data/fma/trains/global_sample_test/tfrecords/test/0000000000.tfrecord")
 
 for sample in dataset.take(1):
     print(sample[0].shape)
