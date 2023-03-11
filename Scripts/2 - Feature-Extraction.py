@@ -30,7 +30,7 @@ args = pd.Series({
     "root_dir":"/mnt/disks/data/",
     "embeddings":"music_style",
     "train_id": "global_sample_test",
-    'sample_size':0.1
+    'sample_size':1
 })
 
 
