@@ -5,7 +5,6 @@
 
 
 import os
-import tensorflow as tf
 import pandas as pd
 
 
@@ -193,13 +192,20 @@ metadata_path = os.path.join(base_path,"fma_metadata")
 
 import numpy as np
 
-
-def load_dataset(train_path,dataset='train'):
-    tfrecords_path = os.path.join(train_path,'tfrecords',dataset)
+def load_dataset(path,dataset='train'):
+    tfrecords_path = os.path.join(path,'tfrecords',dataset)
     
     
     tfrecords_path = [os.path.join(tfrecords_path,path) for path in os.listdir(tfrecords_path)]
     dataset = get_dataset(tfrecords_path)
+    
+    return dataset
+
+
+
+def load_dataset_df(path,dataset='train'):
+    
+    dataset = load_dataset(path,dataset='train')
     
     df = pd.DataFrame(
         dataset.as_numpy_iterator(),
@@ -217,30 +223,29 @@ def load_dataset(train_path,dataset='train'):
     
     return df
     
-
+    
 
 # In[10]:
 
 
-df_train = load_dataset(train_path,dataset='train')
+df_train = load_dataset_df(train_path,dataset='train')
 
 
 # In[11]:
 
 
-df_test = load_dataset(train_path,dataset='test')
+df_test = load_dataset_df(train_path,dataset='test')
 
 
 # In[12]:
 
 
-df_val = load_dataset(train_path,dataset='val')
+df_val = load_dataset_df(train_path,dataset='val')
 
 
 # In[22]:
 
 
-df_train.shape
 
 
 # In[17]:
@@ -318,6 +323,7 @@ from sklearn.metrics import confusion_matrix, mean_squared_error, classification
 
 # In[ ]:
 
+xgb_model.save_model(os.path.join(train_path,"model.bin"))
 
 y_pred = xgb_model.predict(df_test.Feature.values.tolist())
 
@@ -327,9 +333,10 @@ mean_squared_error(df_test.Label.values.tolist(), y_pred)
 # In[41]:
 
 
-pd.DataFrame(classification_report(df_test.Label.values.tolist(), y_pred,output_dict=True)).transpose()
+report_metrics = pd.DataFrame(classification_report(df_test.Label.values.tolist(), y_pred,output_dict=True)).transpose()
 
 
+report_metrics.to_csv(os.path.join(train_path,'report_train_xgboost.csv'),index=False)
 # In[ ]:
 
 
