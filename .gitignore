@@ -354,3 +354,6 @@ MigrationBackup/
 
 # Tfrecords
 *.tfrecords
+
+#notebooks
+.ipynb_checkpoints/
