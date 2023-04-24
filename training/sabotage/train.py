@@ -1,23 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
 
-
+from sklearn import svm
+from sklearn import tree
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn_hierarchical_classification.classifier import HierarchicalClassifier
+from sklearn_hierarchical_classification.constants import ROOT
 import os
 import json
 import tensorflow as tf
 import pandas as pd
 import pickle
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import logging
-
-
 import sys
 sys.setrecursionlimit(1000000)
-
-
-# In[2]:
 
 
 args = pd.Series({
@@ -74,59 +75,6 @@ def __load_json__(path):
     return tmp
 
 
-
-
-# In[5]:
-
-
-import tensorflow as tf
-import multiprocessing
-
-
-
-class Dataset:
-    def __init__(self, tfrecords_path, epochs, batch_size):
-        self.tfrecords_path = tfrecords_path
-        self.epochs = epochs
-        self.batch_size = batch_size
-
-    def list_files(self):
-        return [os.path.join(tfrecords_path,file_path) for file_path in os.listdir(tfrecords_path)]
-
-    def build(self):
-        files = self.list_files()
-
-        print("build_tf record: files_count: {} / batch_size: {} / epochs: {}".format(len(files), self.batch_size, self.epochs))
-
-        ds = tf.data.TFRecordDataset(files, num_parallel_reads=multiprocessing.cpu_count())
-                      
-
-        return ds
-    
-   
-    @staticmethod
-    def __parse__(example):
-        parsed = tf.parse_single_example(example, features={
-            'emb' : tf.io.FixedLenFeature([], tf.string),
-            'track_id' : tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True)
-        })
-        
-        content = tf.io.parse_single_example(element, data)
-
-        label = tf.cast(content['track_id'], tf.int32)
-        label_hot = tf.one_hot(label1[0], label1[1])
-        
-        emb = content['emb']
-        #get our 'feature'
-        feature = tf.io.parse_tensor(emb, out_type=tf.float32)
-
-        inp = {'emb': feature}
-        out = {'global_output': label_hot}
-
-        return inp, out
-
-
-# In[6]:
 
 
 def _bytes_feature(value):
@@ -188,12 +136,6 @@ def get_dataset(filename):
 
 
 
-# In[7]:
-
-
-import numpy as np
-
-
 def load_dataset(path,dataset=args.embeddings):
     tfrecords_path = os.path.join(path,'tfrecords',dataset)
     
@@ -212,201 +154,96 @@ def load_dataset(path,dataset=args.embeddings):
     try:
         df.feature = df.feature.apply(lambda x: x[0] if x.shape[0] != 0 else None)
     except:
-        print(x)
+        pass
     
     return df
     
 
+def run():
+    df = load_dataset(args.dataset_path,dataset=args.embeddings)
+    df.dropna(inplace=True)
+    tracks_df = pd.read_csv(os.path.join(train_path,"tracks.csv"))
+    labels = __load_json__(labels_file)
+    tqdm.pandas()
 
-# In[8]:
+    # tracks_df.loc[:,'labels_1'] = tracks_df.labels_1.astype(str).progress_apply(lambda x: labels['label1'][x])
 
+    # tracks_df.loc[:,'labels_2'] = tracks_df.labels_2.astype(str).progress_apply(lambda x: labels['label2'][x])
 
-df = load_dataset(args.dataset_path,dataset=args.embeddings)
+    # tracks_df.loc[:,'labels_3'] = tracks_df.labels_3.astype(str).progress_apply(lambda x: labels['label3'][x])
 
+    # tracks_df.loc[:,'labels_4'] = tracks_df.labels_4.astype(str).progress_apply(lambda x: labels['label4'][x])
 
-# In[9]:
+    # tracks_df.loc[:,'labels_5'] = tracks_df.labels_5.astype(str).progress_apply(lambda x: labels['label5'][x])
+    tracks_df = tracks_df.merge(df, on='track_id')
 
+    # genres_df = tracks_df.drop_duplicates(subset=['labels_5'])[['labels_1','labels_2','labels_3','labels_4','labels_5']]
+    genres_df = tracks_df.drop_duplicates(subset=['labels_2'])[['labels_1','labels_2']]
 
-df
+    # Cria um dicionário que mapeia o ID de cada gênero musical aos IDs de seus subgêneros
+    genre_dict = {
+        ROOT:genres_df.labels_1.unique().tolist()}
 
+    def add_node(genre_id,parent_id):
+        if pd.notna(parent_id):
+            if parent_id not in genre_dict:
+                genre_dict[parent_id] = []
+            genre_dict[parent_id].append(genre_id)
 
-# In[10]:
 
 
-df.dropna(inplace=True)
+    for i, row in genres_df.iterrows():
+        genre_id = row['labels_2']
+        parent_id = row['labels_1']
+        add_node(genre_id,parent_id)
 
+    #     genre_id = row['labels_3']
+    #     parent_id = row['labels_2']
+    #     add_node(genre_id,parent_id)
 
-# In[11]:
+    #     genre_id = row['labels_4']
+    #     parent_id = row['labels_3']
+    #     add_node(genre_id,parent_id)
 
+    #     genre_id = row['labels_5']
+    #     parent_id = row['labels_4']
+        # add_node(genre_id,parent_id)
 
-df
+    base_estimator = make_pipeline(
+        svm.SVC(
+            gamma=0.001,
+            kernel="rbf",
+            probability=True
+        ),
+    )
 
+    tree_estimator = tree.DecisionTreeClassifier()
 
-# In[12]:
+    clf = HierarchicalClassifier(
+        base_estimator=base_estimator,
+        class_hierarchy=genre_dict,
+        progress_wrapper=tqdm
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        tracks_df.feature.values.tolist(),
+        tracks_df.labels_2.astype(str).values.tolist(),
+        test_size=0.2,
+        random_state=42,
+    )
+    logging.disable(logging.CRITICAL)
 
 
-tracks_df = pd.read_csv(os.path.join(train_path,"tracks.csv"))
 
+    model = clf.fit(X_train, y_train)
 
-# In[13]:
+    filename = os.path.join(train_path,'hsvm.model')
+    pickle.dump(model, open(filename, 'wb'))
 
+    y_pred = clf.predict(X_test)
 
-tracks_df
+    print("Classification Report:\n", classification_report(y_test, y_pred))
 
-
-# In[14]:
-
-
-labels = __load_json__(labels_file)
-
-
-# In[15]:
-
-
-tqdm.pandas()
-
-
-# In[16]:
-
-
-# tracks_df.loc[:,'labels_1'] = tracks_df.labels_1.astype(str).progress_apply(lambda x: labels['label1'][x])
-
-# tracks_df.loc[:,'labels_2'] = tracks_df.labels_2.astype(str).progress_apply(lambda x: labels['label2'][x])
-
-# tracks_df.loc[:,'labels_3'] = tracks_df.labels_3.astype(str).progress_apply(lambda x: labels['label3'][x])
-
-# tracks_df.loc[:,'labels_4'] = tracks_df.labels_4.astype(str).progress_apply(lambda x: labels['label4'][x])
-
-# tracks_df.loc[:,'labels_5'] = tracks_df.labels_5.astype(str).progress_apply(lambda x: labels['label5'][x])
-
-
-# In[17]:
-
-
-tracks_df = tracks_df.merge(df, on='track_id')
-
-
-# In[18]:
-
-
-# genres_df = tracks_df.drop_duplicates(subset=['labels_5'])[['labels_1','labels_2','labels_3','labels_4','labels_5']]
-genres_df = tracks_df.drop_duplicates(subset=['labels_2'])[['labels_1','labels_2']]
-
-
-# In[19]:
-
-
-from sklearn import svm
-from sklearn import tree
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import classification_report
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import make_pipeline
-
-from sklearn_hierarchical_classification.classifier import HierarchicalClassifier
-from sklearn_hierarchical_classification.constants import ROOT
-from sklearn_hierarchical_classification.metrics import h_fbeta_score, multi_labeled
-
-
-# In[20]:
-
-
-# Cria um dicionário que mapeia o ID de cada gênero musical aos IDs de seus subgêneros
-genre_dict = {
-    ROOT:genres_df.labels_1.unique().tolist()}
-
-def add_node(genre_id,parent_id):
-    if pd.notna(parent_id):
-        if parent_id not in genre_dict:
-            genre_dict[parent_id] = []
-        genre_dict[parent_id].append(genre_id)
-
-
-
-for i, row in genres_df.iterrows():
-    genre_id = row['labels_2']
-    parent_id = row['labels_1']
-    add_node(genre_id,parent_id)
-
-#     genre_id = row['labels_3']
-#     parent_id = row['labels_2']
-#     add_node(genre_id,parent_id)
-    
-#     genre_id = row['labels_4']
-#     parent_id = row['labels_3']
-#     add_node(genre_id,parent_id)
-    
-#     genre_id = row['labels_5']
-#     parent_id = row['labels_4']
-    # add_node(genre_id,parent_id)
-    
-    
-    
-
-# In[13]:
-
-
-# genre_dict
-
-
-
-# In[21]:
-
-
-base_estimator = make_pipeline(
-    TruncatedSVD(n_components=24),
-    svm.SVC(
-        gamma=0.001,
-        kernel="rbf",
-        probability=True
-    ),
-)
-
-tree_estimator = tree.DecisionTreeClassifier()
-
-clf = HierarchicalClassifier(
-    base_estimator=base_estimator,
-    class_hierarchy=genre_dict,
-    progress_wrapper=tqdm,
-    feature_extraction="preprocessed"
-)
-
-
-# In[23]:
-
-
-X_train, X_test, y_train, y_test = train_test_split(
-    tracks_df.feature.values.tolist(),
-    tracks_df.labels_2.astype(str).values.tolist(),
-    test_size=0.2,
-    random_state=42,
-)
-
-
-# In[24]:
-
-
-logging.disable(logging.CRITICAL)
-
-
-# In[ ]:
-
-
-model = clf.fit(X_train, y_train)
-
-
-# In[26]:
-
-
-filename = os.path.join(train_path,'hsvm.model')
-pickle.dump(model, open(filename, 'wb'))
-
-y_pred = clf.predict(X_test)
-
-print("Classification Report:\n", classification_report(y_test, y_pred))
-
-
-print('cabou')
+    print('cabou')
 
 
 
