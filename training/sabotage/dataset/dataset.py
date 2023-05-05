@@ -3,6 +3,8 @@ import multiprocessing
 
 
 
+
+
 class Dataset:
     def __init__(self, tfrecords_path, epochs, batch_size):
         self.tfrecords_path = tfrecords_path
