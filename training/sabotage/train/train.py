@@ -1,4 +1,3 @@
-from training.sabotage.train import run
 import os
 import argparse
 from datetime import datetime as dt
@@ -51,7 +50,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
-
