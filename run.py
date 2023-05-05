@@ -3,7 +3,7 @@ import os
 import argparse
 from datetime import datetime as dt
 
-from b2w.black_magic.visao.train.training import run
+from training.sabotage.train.train import run
 
 import tensorflow as tf
 

@@ -1,11 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras.applications import ResNet50V2
+from keras import layers
 
-from b2w.black_magic.visao.model.attention import Position_Embedding, TransformerBlock, Attention
-from b2w.black_magic.visao.model.config import IMAGE_SHAPE
-
-from tensorflow.keras.layers import GlobalAveragePooling2D
-
+MUSIC_SHAPE = (200,200)
 
 def _load_weights(model, weights_path):
     print(model.summary())
@@ -32,154 +28,40 @@ class OneHotLayer(tf.keras.layers.Layer):
         return input_shape
 
 
-def build_classification(inputs, size, name):
-    x = tf.keras.layers.Concatenate(axis=1)(inputs)
-    x = tf.keras.layers.Dropout(0.1)(x)
-    x = tf.keras.layers.Dense(1024, activation="relu")(x)
-    x = tf.keras.layers.Dropout(0.1)(x)
-    x = tf.keras.layers.Dense(size, activation='softmax', name=name)(x)
+
+def build_cnn(x):
+    x = layers.Conv2D(32, 3, activation='relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(64, 3, activation='relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Conv2D(128, 3, activation='relu')(x)
+    x = layers.MaxPooling2D()(x)
+    x = layers.Flatten()(x)
 
     return x
 
+def build_classification(inputs, size, name):
+    x = layers.Concatenate(axis=1)(inputs)
+    x = layers.Dropout(0.1)(x)
+    x = layers.Dense(1024, activation="relu")(x)
+    x = layers.Dropout(0.1)(x)
+    x = layers.Dense(size, activation='softmax', name=name)(x)
 
-def build_model_dept(dept_size, seto_size, fami_size, subf_size, sequence_size, weights_path=None):
-    print("build model dept")
-    text = tf.keras.layers.Input(shape=(sequence_size, 128), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
+    return x
 
-    xname = Position_Embedding()(text)
-    xname = TransformerBlock(128, 8, 32)(xname)
-    xname = tf.keras.layers.Flatten()(xname)
-
-    ximage = ResNet50V2(include_top=False, weights=image_weights(weights_path),
-                        input_shape=IMAGE_SHAPE, pooling='avg')(image)
-
-    dept = build_classification([xname, ximage], dept_size, "departamento")
-
-    model = tf.keras.models.Model([text, image], [dept], name="ModelDepartamento")
-
-    _load_weights(model, weights_path)
-
-    return model
-
-
-def build_model_outros(dept_size, seto_size, fami_size, subf_size, sequence_size, weights_path=None):
-    print("build model outros")
-    text = tf.keras.layers.Input(shape=(sequence_size, 128), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
-    dept = tf.keras.layers.Input(shape=dept_size, dtype=tf.float32, name="dept")
-
-    xname = Position_Embedding()(text)
-    xname = TransformerBlock(128, 8, 32)(xname)
-    xname = tf.keras.layers.Flatten()(xname)
-
-    ximage = ResNet50V2(include_top=False, weights=image_weights(weights_path),
-                        input_shape=IMAGE_SHAPE, pooling='avg')(image)
-
-    seto = build_classification([xname, ximage, dept], seto_size, "setor")
-    fami = build_classification([xname, ximage, dept, seto], fami_size, "familia")
-    subf = build_classification([xname, ximage, dept, seto, fami], subf_size, "subfamilia")
-
-    model = tf.keras.models.Model([dept, text, image], [seto, fami, subf], name="ModelOutros")
-
-    _load_weights(model, weights_path)
-
-    return model
-
-
-def build_model_livro(dept_size, seto_size, fami_size, subf_size, sequence_size, weights_path=None):
-    print("build model livro")
-    text = tf.keras.layers.Input(shape=(sequence_size, 128), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
-
-    xname = Position_Embedding()(text)
-    xname = TransformerBlock(128, 8, 32)(xname)
-    xname = tf.keras.layers.Flatten()(xname)
-
-    ximage = ResNet50V2(include_top=False, weights=image_weights(weights_path),
-                        input_shape=IMAGE_SHAPE, pooling='avg')(image)
-
-    dept = build_classification([xname, ximage], dept_size, "departamento")
-    seto = build_classification([xname, ximage, dept], seto_size, "setor")
-    fami = build_classification([xname, ximage, dept, seto], fami_size, "familia")
-    subf = build_classification([xname, ximage, dept, seto, fami], subf_size, "subfamilia")
-
-    model = tf.keras.models.Model([text, image], [dept, seto, fami, subf], name="ModelLivros")
-
-    _load_weights(model, weights_path)
-
-    return model
-
-
-def build_model_presal_poc(dept_size, seto_size, fami_size, subf_size, sequence_size, word_emb_size, weights_path=None):
+def build_model(level_size, sequence_size, word_emb_size, weights_path=None):
     print("build model presal poc")
-    text = tf.keras.layers.Input(shape=(sequence_size, word_emb_size), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
+    music = tf.keras.layers.Input(shape=MUSIC_SHAPE, dtype=tf.float32, name="music")
 
-    xname = Position_Embedding()(text)
-    xname = TransformerBlock(word_emb_size, 8, 32)(xname)
-    xname = tf.keras.layers.Flatten()(xname)
+    x = build_cnn(music)
 
-    ximage = ResNet50V2(include_top=False, weights=image_weights(weights_path),
-                        input_shape=IMAGE_SHAPE, pooling='avg')(image)
+    output = []
+    for level_size ,level_name in level_size:
+        out = build_classification([x], level_size, level_name)
+        x = [x, out]
+        output.append(out)
 
-    dept = build_classification([xname, ximage], dept_size, "departamento")
-    seto = build_classification([xname, ximage, dept], seto_size, "setor")
-    fami = build_classification([xname, ximage, dept, seto], fami_size, "familia")
-    subf = build_classification([xname, ximage, dept, seto, fami], subf_size, "subfamilia")
-
-    model = tf.keras.models.Model([text, image], [dept, seto, fami, subf], name="ModelPresal")
-
-    _load_weights(model, weights_path)
-
-    return model
-
-
-def build_model_presal_only_images_poc(dept_size, seto_size, fami_size, subf_size, sequence_size, word_emb_size,
-                                       weights_path=None):
-    print("build model presal poc")
-    # text = tf.keras.layers.Input(shape=(sequence_size, word_emb_size), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
-
-    # xname = Position_Embedding()(text)
-    # xname = TransformerBlock(word_emb_size, 8, 32)(xname)
-    # xname = tf.keras.layers.Flatten()(xname)
-
-    ximage = ResNet50V2(include_top=False, weights=image_weights(weights_path),
-                        input_shape=IMAGE_SHAPE, pooling='avg')(image)
-
-    dept = build_classification([ximage], dept_size, "departamento")
-    seto = build_classification([ximage, dept], seto_size, "setor")
-    fami = build_classification([ximage, dept, seto], fami_size, "familia")
-    subf = build_classification([ximage, dept, seto, fami], subf_size, "subfamilia")
-
-    model = tf.keras.models.Model([image], [dept, seto, fami, subf], name="ModelImagesPresal")
-
-    _load_weights(model, weights_path)
-
-    return model
-
-
-def build_model_presal_v1(dept_size, seto_size, fami_size, subf_size, sequence_size, word_emb_size, weights_path=None):
-    print("build model presal poc")
-    text = tf.keras.layers.Input(shape=(sequence_size, word_emb_size), dtype=tf.float32, name="name")
-    image = tf.keras.layers.Input(shape=IMAGE_SHAPE, dtype=tf.float32, name="image")
-
-    xname = Attention()(text)
-
-    inception_resnet_v2 = ResNet50V2(include_top=False, weights=image_weights(weights_path), input_shape=IMAGE_SHAPE)
-    for layer in inception_resnet_v2.layers[:-16]:
-        layer.trainable = False
-    cnn_model = inception_resnet_v2(image)
-
-    ximage = GlobalAveragePooling2D()(cnn_model)
-
-    dept = build_classification([xname, ximage], dept_size, "departamento")
-    seto = build_classification([xname, ximage, dept], seto_size, "setor")
-    fami = build_classification([xname, ximage, dept, seto], fami_size, "familia")
-    subf = build_classification([xname, ximage, dept, seto, fami], subf_size, "subfamilia")
-
-    model = tf.keras.models.Model([text, image], [dept, seto, fami, subf], name="ModelPresalv1")
+    model = tf.keras.models.Model([music], [output], name="ModelPresalv1")
 
     _load_weights(model, weights_path)
 
