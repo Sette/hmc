@@ -49,7 +49,7 @@ def build_classification(inputs, size, name):
 
     return x
 
-def build_model(level_size, sequence_size, word_emb_size, weights_path=None):
+def build_model(level_size, weights_path=None):
     print("build model presal poc")
     music = tf.keras.layers.Input(shape=MUSIC_SHAPE, dtype=tf.float32, name="music")
 

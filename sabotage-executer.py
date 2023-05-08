@@ -1,4 +1,4 @@
-from training.sabotage.train import run
+from sabotage import run
 
 if __name__ == "__main__":
     run()

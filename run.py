@@ -1,9 +1,8 @@
-from training.sabotage.train import run
 import os
 import argparse
 from datetime import datetime as dt
 
-from training.sabotage.train.train import run
+from sabotage.train.train import run
 
 import tensorflow as tf
 
