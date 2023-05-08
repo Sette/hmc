@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[21]:
-
 import os
 import csv
 import json
@@ -19,18 +17,8 @@ from tqdm import tqdm
 from essentia.standard import MonoLoader, TensorflowPredictEffnetDiscogs
 
 
-
-# In[11]:
-
-
-
-# In[12]:
-
-
 tqdm.pandas()
 
-
-# In[13]:
 
 
 args = pd.Series({
@@ -40,17 +28,7 @@ args = pd.Series({
 })
 
 
-# In[14]:
-
-
-# In[16]:
-
-
 base_path = os.path.join(args.root_dir,"fma")
-
-
-# In[17]:
-
 
 models_path = os.path.join(args.root_dir,"models")
 
@@ -58,29 +36,14 @@ models_path = os.path.join(args.root_dir,"models")
 metadata_path_fma = os.path.join(base_path,"fma_metadata")
 
 
-
-# In[15]:
-
-
 if args.embeddings == "music_style":
     model_path = os.path.join(models_path,args.embeddings,"discogs-effnet-bs64-1.pb")
-
-
-
-# In[22]:
 
 
 df = pd.read_csv(os.path.join(metadata_path_fma,"tracks_valid.csv"))
 
 
-# In[23]:
-
-
 model = TensorflowPredictEffnetDiscogs(graphFilename=model_path,output="PartitionedCall:1")
-
-
-# In[24]:
-
 
 def create_dir(path):
     # checking if the directory demo_folder2 
@@ -101,26 +64,13 @@ def extract_feature(file_path,model):
     return activations
 
 
-# In[25]:
-
-
 def find_path(track_id,dataset_path):
     track_id = track_id.zfill(6)
     folder_id = track_id[0:3]
     file_path = os.path.join(dataset_path,folder_id,track_id+'.mp3')
     return file_path
-    
-
-
-# In[36]:
-
 
 df['file_path'] = df.track_id.apply(lambda x: find_path(str(x),args.dataset_path))
-
-
-
-# In[26]:
-
 
 def _bytes_feature(value):
     """Returns a bytes_list from a string / byte."""
@@ -154,14 +104,6 @@ def parse_single_music(data,music):
     out = tf.train.Example(features=tf.train.Features(feature=data))
 
     return out
-# In[45]:
-
-
-# In[45]:
-
-
-
-# In[24]:
 
 def process_df(df,i,count,batch_size,tfrecords_path):
     batch_df = df[i:i+batch_size]
@@ -193,8 +135,6 @@ def generate_tf_records(df,model,filename="train"):
     
     
     batch_size = 1024 * 10  # 10k records from each file batch
-    count = 0
-    total = ceil(len(df) / batch_size)
     
     with Parallel(n_jobs=10, require='sharedmem') as para:
         print("Estamos usando paralelismo!!!")
@@ -203,19 +143,8 @@ def generate_tf_records(df,model,filename="train"):
 
 
 
-# In[ ]:
-
-
 generate_tf_records(df,model,filename=args.embeddings)
 
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
 
 
 

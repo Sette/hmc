@@ -1,83 +1,63 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[57]:
 
 
 import pandas as pd
 import numpy as np
 import json
+import ast
 import os
-from essentia.standard import MonoLoader
 
-
-# In[2]:
+# In[58]:
 
 
 from tqdm.notebook import tqdm
 
-
-# In[3]:
+# In[59]:
 
 
 tqdm.pandas()
 
-
-# In[4]:
-
+# In[60]:
 
 
 args = pd.Series({
-    "root_dir":"/mnt/disks/data/",
-    "dataset_path":"/mnt/disks/data/fma/fma_large",
-    "embeddings":"music_style",
-    "train_id": "hierarchical_test",
-    'sample_size':1
+    "root_dir": "/mnt/disks/data/",
+    "dataset_path": "/mnt/disks/data/fma/fma_large",
+    "embeddings": "music_style",
+    "train_id": "hierarchical_all",
+    'sample_size': 1
 })
 
-
-# In[5]:
-
-
-
+# In[61]:
 
 
 job_path = "/mnt/disks/data/fma/trains"
 
-
 # In[15]:
 
-
-train_path = os.path.join(job_path,args.train_id)
-
+train_path = os.path.join(job_path, args.train_id)
 
 # In[16]:
 
-
-base_path = os.path.join(args.root_dir,"fma")
-
+base_path = os.path.join(args.root_dir, "fma")
 
 # In[17]:
 
+models_path = os.path.join(args.root_dir, "models")
 
-models_path = os.path.join(args.root_dir,"models")
-
-
-metadata_path_fma = os.path.join(base_path,"fma_metadata")
-
+metadata_path_fma = os.path.join(base_path, "fma_metadata")
 
 # In[18]:
 
+metadata_file = os.path.join(train_path, "metadata.json")
 
-metadata_file = os.path.join(train_path,"metadata.json")
-
-
-categories_labels_path = os.path.join(train_path,"labels.json")
+categories_labels_path = os.path.join(train_path, "labels.json")
 
 
-# In[6]:
-
-
+# In[62]:
 
 
 def __load_json__(path):
@@ -87,300 +67,166 @@ def __load_json__(path):
     return tmp
 
 
-
-# In[7]:
-
+# In[63]:
 
 
 def create_dir(path):
-    # checking if the directory demo_folder2 
+    # checking if the directory demo_folder2
     # exist or not.
     if not os.path.isdir(path):
-
-        # if the demo_folder2 directory is 
+        # if the demo_folder2 directory is
         # not present then create it.
         os.makedirs(path)
     return True
 
 
-# In[8]:
+# In[64]:
 
 
 create_dir(train_path)
 
-
 # ## Load genres file. Contains relationships beetwen genres
 
-# In[9]:
+# In[65]:
 
 
-genres_df = pd.read_csv(os.path.join(metadata_path_fma,'genres.csv'))
+genres_df = pd.read_csv(os.path.join(metadata_path_fma, 'genres.csv'))
 
-
-# In[10]:
+# In[66]:
 
 
 genres_df
 
-
-# In[11]:
-
-
-genres_df[genres_df['genre_id'] == 76]
+# In[67]:
 
 
-# In[12]:
+genres_df[genres_df['genre_id'] == 495]
 
-
-
-# Filtra as colunas relevantes
-genres = genres_df[['genre_id', 'parent']]
-
-# Cria um dicionário que mapeia o ID de cada gênero musical aos IDs de seus subgêneros
-genre_dict = {}
-for i, row in genres.iterrows():
-    genre_id = row['genre_id']
-    parent_id = row['parent']
-    if pd.notna(parent_id):
-        if parent_id not in genre_dict:
-            genre_dict[parent_id] = []
-        genre_dict[parent_id].append(genre_id)
-
-
-# In[13]:
-
-
-genre_dict
-
-
-# In[14]:
+# In[68]:
 
 
 # Cria um dicionário que associa o ID de cada música aos IDs de seus gêneros musicais
-tracks_df = pd.read_csv(os.path.join(metadata_path_fma,'tracks.csv'), header=[0,1], index_col=0)
+tracks_df = pd.read_csv(os.path.join(metadata_path_fma, 'tracks_valid.csv'))
+
+# In[69]:
 
 
-# In[15]:
+tracks_df = tracks_df.sample(frac=args.sample_size)
+
+# In[70]:
 
 
-tracks_df
+tracks_df.sample(20)
+
+# In[71]:
 
 
-# In[19]:
+tracks_df.valid_genre.values
+
+# In[72]:
 
 
-tracks_df.track.genres.value_counts()
+tracks_df.track_title
 
 
-# In[21]:
-
-
-tracks_df['valid_genre'] = tracks_df.track.genres.apply(lambda x: x.strip('][').split(', ') if x != '[]' else None)
-
-
-# In[22]:
-
-
-tracks_df.valid_genre.dropna()
-
-
-# In[23]:
-
-
-tracks_df.track.genre_top
-
-
-# In[24]:
-
-
-tracks_df.track
-
-
-# In[25]:
-
-
-genre_tracks_dict = {}
-for track_id, track_genres in tracks_df.valid_genre.dropna().items():
-    # track_genres = row[('track', 'genres')].split('|')[0]
-    # track_genres = track_genres.strip('][').split(', ')
-    # print(track_genres)
-    track_genre_ids = []
-    genre = track_genres[0]
-    if int(genre) in genre_dict:
-        track_genre_ids.extend(genre_dict[int(genre)])
-    track_genre_ids.append(int(genre))
-    genre_tracks_dict[track_id] = list(reversed(track_genre_ids))
-
-
-# In[26]:
-
-
-genre_tracks_dict
-
-
-# In[27]:
+# In[73]:
 
 
 ## Get complete genre structure
-def get_all_structure(estrutura,df_genres):
+def get_all_structure(estrutura, df_genres):
     ## Get structure from df_genres
-    
-    def get_all_structure_from_df(estrutura,df_genres):
+    def get_all_structure_from_df(estrutura, df_genres, structure=[]):
         if estrutura == 0:
-            return 
+            return structure
         else:
-            return f'{estrutura}-{get_all_structure_from_df(df_genres[df_genres["genre_id"]==int(estrutura)].parent.values[0],df_genres)}'
-        
-    
-    return get_all_structure_from_df(estrutura,df_genres)
-    
+            structure.append(int(estrutura))
+            get_all_structure_from_df(df_genres[df_genres["genre_id"] == int(estrutura)].parent.values[0], df_genres,
+                                      structure)
+            return structure
+
+    return get_all_structure_from_df(estrutura, df_genres, structure=[])
 
 
-# In[28]:
+# In[74]:
 
 
-tracks_df['first_genre_id'] = tracks_df.valid_genre.apply(lambda x:x[0] if x != None else None)
+# tracks_df['valid_genre'] = tracks_df.track_genres.apply(lambda x: x.strip('][').split(', ') if x != '[]' else None)
+tracks_df['valid_genre'] = tracks_df.valid_genre.apply(lambda x: ast.literal_eval(x))
+
+# In[75]:
 
 
-# In[29]:
+tracks_df['last_genre_id'] = tracks_df.valid_genre.apply(lambda x: x[-1] if x != None else None)
+
+# In[76]:
 
 
-tracks_df = tracks_df[['valid_genre','first_genre_id']]
+tracks_df.sample(20)
 
-
-# In[30]:
-
-
-tracks_df
-
-
-# In[31]:
+# In[77]:
 
 
 tracks_df.dropna(inplace=True)
 
-
-# In[32]:
+# In[78]:
 
 
 tracks_df
 
-
-# In[33]:
-
-
-tracks_df["full_genre_id"] = tracks_df.first_genre_id.apply(lambda x: get_all_structure(x,genres_df))
+# In[79]:
 
 
-# In[34]:
+tracks_df['full_genre_id'] = tracks_df.last_genre_id.progress_apply(lambda x: get_all_structure(x, genres_df)[::-1])
+
+# In[80]:
 
 
-tracks_df.reset_index(inplace=True)
+tracks_df.full_genre_id.value_counts()
+
+# In[81]:
 
 
-# In[35]:
+tracks_df.columns
+
+# In[82]:
 
 
-def find_path(track_id,dataset_path):
-    track_id = track_id.zfill(6)
-    folder_id = track_id[0:3]
-    file_path = os.path.join(dataset_path,folder_id,track_id+'.mp3')
-    return file_path
-    
+tracks_df = tracks_df[['track_id', 'full_genre_id']]
+
+# In[83]:
 
 
-# In[36]:
+tracks_df.full_genre_id.values
+
+# In[84]:
 
 
-tracks_df['file_path'] = tracks_df.track_id.apply(lambda x: find_path(str(x),args.dataset_path))
+tracks_df.full_genre_id.info
+
+# In[85]:
 
 
-# In[37]:
+labels_size = tracks_df.full_genre_id.apply(lambda x: len(x))
+
+# In[86]:
 
 
-tracks_df.iloc[0].file_path
+labels_size = labels_size.max()
 
 
-# In[38]:
 
-
-def valid_music(file_path):
-    try:
-        # we start by instantiating the audio loader:
-        loader = MonoLoader(filename=file_path)
-
-        return True
-    except:
-        return False
-
-
-# In[ ]:
-
-
-valid_music('/mnt/disks/data/fma/fma_large/000/000002.mp3')
-
-
-# In[39]:
-
-
-teste = tracks_df.iloc[:100].file_path.astype(str).progress_apply(lambda x: valid_music(x))
-
-
-# In[41]:
-
-
-teste
-
-
-# In[ ]:
-
-
-tracks_df[['track_id','file_path']].shape
-
-
-# In[ ]:
-
-
-tracks_df.shape
-
-
-# In[ ]:
-
-
-# tracks_df.set_index('track_id',inplace=True)
-
-
-# ### Delete all crashed files
-
-# In[36]:
-
-
-tracks_df = tracks_df[tracks_df['Valid'] == True]
-
-
-# In[ ]:
-
-
-tracks_df.to_csv(os.path.join(train_path,"tracks_genres_id_full_valid.csv"),index=False)
-
-
-# In[14]:
-
-
-df = pd.read_csv(os.path.join(train_path,"tracks_genres_id_full_valid.csv"))
+import pandas as pd
+import os
 
 
 # ### Parse of label to structure
 
-# In[15]:
-
-
 ### Function for parse label to sctructure of hierarhical scheme
 
-def parse_label(label):
-    label = label.split('-')
+def parse_label(label, label_size=5):
+    # label = label.split('-')
     # preencher com 0 no caso de haver menos de 5 níveis
-    labels = np.zeros(5,dtype=int)
+    labels = np.zeros(label_size, dtype=int)
     for i, label in enumerate(label):
         if i == 5:
             break
@@ -390,66 +236,53 @@ def parse_label(label):
     return labels
 
 
-# In[16]:
+parsed_labels = tracks_df.full_genre_id.apply(lambda x: parse_label(x))
 
 
-df.full_genre_id.value_counts()
+tracks_df['full_genre_id']
 
 
-# In[17]:
 
-
-df['labels'] = df.full_genre_id.apply(lambda x: parse_label(x))
-
-
-# In[18]:
-
-
-def convert_label_to_string(x,level=2):
+def convert_label_to_string(x, level=2):
     return '-'.join([str(value) for value in x[:level]])
 
 
-# In[19]:
+
+tracks_df['labels_1'] = parsed_labels.progress_apply(lambda x: str(x[:1][0]))
+tracks_df['labels_2'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=2))
+tracks_df['labels_3'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=3))
+tracks_df['labels_4'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=4))
+tracks_df['labels_5'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=5))
 
 
-df['labels_1'] = df.labels.progress_apply(lambda x: str(x[:1][0]))
-df['labels_2'] = df.labels.progress_apply(lambda x: convert_label_to_string(x,level=2))
-df['labels_3'] = df.labels.progress_apply(lambda x: convert_label_to_string(x,level=3))
-df['labels_4'] = df.labels.progress_apply(lambda x: convert_label_to_string(x,level=4))
-df['labels_5'] = df.labels.progress_apply(lambda x: convert_label_to_string(x,level=5))
+
+tracks_df.labels_1.value_counts()
 
 
-# In[20]:
+
+tracks_df['labels_1'].value_counts()
 
 
-df.labels_2.unique()
+
+tracks_df.to_csv(os.path.join(train_path, "tracks.csv"), index=False)
 
 
-# In[21]:
+tracks_df = pd.read_csv(os.path.join(train_path, "tracks.csv"))
 
 
-labels_level_1 = df.labels_1.unique()
-labels_level_2 = df.labels_2.unique()
-labels_level_3 = df.labels_3.unique()
-labels_level_4 = df.labels_4.unique()
-labels_level_5 = df.labels_5.unique()
+
+categories_df = pd.DataFrame({'level5': tracks_df.labels_5.unique()})
 
 
-# In[22]:
+
+categories_df['level1'] = categories_df.level5.progress_apply(lambda x: '-'.join(x.split('-')[:1]))
+categories_df['level2'] = categories_df.level5.progress_apply(lambda x: '-'.join(x.split('-')[:2]))
+categories_df['level3'] = categories_df.level5.progress_apply(lambda x: '-'.join(x.split('-')[:3]))
+categories_df['level4'] = categories_df.level5.progress_apply(lambda x: '-'.join(x.split('-')[:4]))
 
 
-categories_df = pd.DataFrame(
-    {'level5':labels_level_5,
-    'level4':labels_level_4,
-    'level3':labels_level_3,
-    'level2':labels_level_2,
-    'level1':labels_level_1})
 
-
-# In[23]:
-
-
-def get_labels_name(x,genres_df):
+def get_labels_name(x, genres_df):
     levels = 5
     full_name = []
     last_level = 0
@@ -457,31 +290,30 @@ def get_labels_name(x,genres_df):
     for genre in x.split('-'):
         genre_df = genres_df[genres_df['genre_id'] == int(genre)]
         if genre_df.empty:
-            genre_name = genre_root 
+            genre_name = genre_root
         else:
             genre_name = genre_df.title.values.tolist()[0]
             genre_root = genre_name
-        
+
         full_name.append(genre_name)
     full_name = '>'.join(full_name)
-        
+
     return full_name
     # return genres_df[genres_df['genre_id'] == int(x)].title.values.tolist()[0]
 
 
-# In[24]:
+# In[103]:
 
 
-categories_df['level5_name'] = categories_df.level5.apply(lambda x: get_labels_name(x,genres_df))
+categories_df['level5_name'] = categories_df.level5.apply(lambda x: get_labels_name(x, genres_df))
+
+# In[104]:
 
 
-# In[25]:
+categories_df
 
 
-categories_df['level5_name']
-
-
-# In[27]:
+# In[105]:
 
 
 def __create_labels__(categories_df):
@@ -503,53 +335,70 @@ def __create_labels__(categories_df):
         "label5_name": {},
     }
 
-    for idx, cat in enumerate(set(categories_df.level1.values.tolist())):
+    idx = 0
+
+    for id_x, cat in enumerate(set(categories_df.level1.values.tolist())):
         data['label1'][cat] = idx
         data['label1_inverse'].append(cat)
         data['label1_count'] = idx + 1
+        idx += 1
 
-    for idx, cat in enumerate(set(categories_df.level2.values.tolist())):
+    for id_x, cat in enumerate(set(categories_df.level2.values.tolist())):
         data['label2'][cat] = idx
         data['label2_inverse'].append(cat)
         data['label2_count'] = idx + 1
-        
-    for idx, cat in enumerate(set(categories_df.level3.values.tolist())):
+        idx += 1
+
+    for id_x, cat in enumerate(set(categories_df.level3.values.tolist())):
         data['label3'][cat] = idx
         data['label3_inverse'].append(cat)
         data['label3_count'] = idx + 1
+        idx += 1
 
-    for idx, cat in enumerate(set(categories_df.level4.values.tolist())):
+    for id_x, cat in enumerate(set(categories_df.level4.values.tolist())):
         data['label4'][cat] = idx
         data['label4_inverse'].append(cat)
         data['label4_count'] = idx + 1
-        
+        idx += 1
+
     for idx, cat in enumerate(set(categories_df.level5.values.tolist())):
         data['label5'][cat] = idx
         data['label5_inverse'].append(cat)
         data['label5_count'] = idx + 1
-        
-    for cat5,cat4,cat3,cat2,cat1,name5 in categories_df.values:
-        
+        idx += 1
+
+    for cat5, cat1, cat2, cat3, cat4, name5 in categories_df.values:
         name1 = '>'.join(name5.split('>')[:1])
         name2 = '>'.join(name5.split('>')[:2])
         name3 = '>'.join(name5.split('>')[:3])
         name4 = '>'.join(name5.split('>')[:4])
-        
-        
+
         data['label1_name'][cat1] = name1
         data['label2_name'][cat2] = name2
         data['label3_name'][cat3] = name3
         data['label4_name'][cat4] = name4
         data['label5_name'][cat5] = name5
-        
+
     return data
 
 
-# In[28]:
+# In[106]:
 
 
 with open(categories_labels_path, 'w+') as f:
     f.write(json.dumps(__create_labels__(categories_df)))
+
+# In[107]:
+
+
+labels = __create_labels__(categories_df)
+
+# In[108]:
+
+
+labels['label4']
+
+# In[ ]:
 
 
 # In[ ]:
