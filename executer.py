@@ -1,8 +1,9 @@
 import os
-import argparse
+import pandas as pd
 from datetime import datetime as dt
 
-from sabotage.train.train import run
+from sabotage.arguments import  build
+from sabotage.train import run
 
 import tensorflow as tf
 
@@ -13,45 +14,37 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 # Set C++ Graph Execution level verbosity
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
 
+base_path = "/mnt/disks/data/fma/trains"
+id = "hierarchical_single"
 
-def main():
 
-    parser = argparse.ArgumentParser()
+train_path = os.path.join(base_path,id)
+tfrecords_path =os.path.join(train_path,'tfrecords')
+metadata_path = os.path.join(train_path,"metadata.json")
+labels_path = os.path.join(train_path,"labels.json")
 
-    parser.add_argument("--job-name", help="Nome do job de treinamento")
-    parser.add_argument("--epochs", help="Número de épocas de treinamento",type=int)
-    parser.add_argument("--log-steps", help="Log steps",type=int)
-    parser.add_argument("--buffer-size", help="Buffer size",type=int)
-    parser.add_argument("--batch-size", help="Tamanho do batch",type=int)
-    parser.add_argument("--base-path", help="Caminho do job criado pela DAG")
-    parser.add_argument("--train-path", help="Caminho do dataset de treinamento")
-    parser.add_argument("--validation-path", help="Caminho do dataset de validação")
-    parser.add_argument("--test-path", help="Caminho do dataset de teste")
-    parser.add_argument("--labels-path", help="Diretório das labels")
-    parser.add_argument("--metadata-path", help="Diretório do metadata do pre-processamento")
-    parser.add_argument("--model", help="Argumento com o tipo do modelo")
-    parser.add_argument("--job-dir")
-    args = parser.parse_args()
 
-    time_start = dt.utcnow()
-    print("[Visão treinamento] Experiment started at {}".format( time_start.strftime("%H:%M:%S")))
-    print(".......................................")
-    time_start = dt.utcnow()
-    print("[{}] Experiment started at {}".format(args.job_name, time_start.strftime("%H:%M:%S")))
-    print(".......................................")
-    print(args)
-
-    run(args)
-
-    time_end = dt.utcnow()
-    time_elapsed = time_end - time_start
-    print(".......................................")
-    print("[{}] Experiment finished at {} / elapsed time {}s".format(args.job_name, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))
+args = pd.Series({
+    "batch_size":64,
+    "epochs":10,
+    "dropout":0.5,
+    'patience':3,
+    'max_queue_size':64,
+    "labels_path": labels_path,
+    "metadata_path": metadata_path,
+    "trainset_pattern": os.path.join(tfrecords_path,'train'),
+    "testset_pattern": os.path.join(tfrecords_path,'train'),
+    "valset_pattern": os.path.join(tfrecords_path,'val')
+})
 
 
 if __name__ == '__main__':
-    main()
-
-
-
-
+    time_start = dt.utcnow()
+    print("[{}] Experiment started at {}".format(id, time_start.strftime("%H:%M:%S")))
+    print(".......................................")
+    print(args)
+    run(args)
+    time_end = dt.utcnow()
+    time_elapsed = time_end - time_start
+    print(".......................................")
+    print("[{}] Experiment finished at {} / elapsed time {}s".format(id, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))
