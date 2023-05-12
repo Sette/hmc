@@ -30,11 +30,11 @@ class OneHotLayer(tf.keras.layers.Layer):
 
 
 def build_cnn(x):
-    x = layers.Conv2D(32, 3, activation='relu')(x)
+    x = layers.Conv2D(32, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling2D()(x)
-    x = layers.Conv2D(64, 3, activation='relu')(x)
+    x = layers.Conv2D(64, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling2D()(x)
-    x = layers.Conv2D(128, 3, activation='relu')(x)
+    x = layers.Conv2D(128, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling2D()(x)
     x = layers.Flatten()(x)
 

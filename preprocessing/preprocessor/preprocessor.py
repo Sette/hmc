@@ -27,7 +27,7 @@ args = pd.Series({
     "root_dir": "/mnt/disks/data/",
     "dataset_path": "/mnt/disks/data/fma/fma_large",
     "embeddings": "music_style",
-    "train_id": "hierarchical_all",
+    "train_id": "hierarchical_single",
     'sample_size': 1
 })
 
@@ -35,8 +35,6 @@ args = pd.Series({
 
 
 job_path = "/mnt/disks/data/fma/trains"
-
-# In[15]:
 
 train_path = os.path.join(job_path, args.train_id)
 
@@ -57,17 +55,11 @@ metadata_file = os.path.join(train_path, "metadata.json")
 categories_labels_path = os.path.join(train_path, "labels.json")
 
 
-# In[62]:
-
-
 def __load_json__(path):
     with open(path, 'r') as f:
         tmp = json.loads(f.read())
 
     return tmp
-
-
-# In[63]:
 
 
 def create_dir(path):
@@ -80,57 +72,15 @@ def create_dir(path):
     return True
 
 
-# In[64]:
-
-
 create_dir(train_path)
 
-# ## Load genres file. Contains relationships beetwen genres
-
-# In[65]:
 
 
 genres_df = pd.read_csv(os.path.join(metadata_path_fma, 'genres.csv'))
-
-# In[66]:
-
-
-genres_df
-
-# In[67]:
-
-
-genres_df[genres_df['genre_id'] == 495]
-
-# In[68]:
-
-
 # Cria um dicionário que associa o ID de cada música aos IDs de seus gêneros musicais
 tracks_df = pd.read_csv(os.path.join(metadata_path_fma, 'tracks_valid.csv'))
 
-# In[69]:
-
-
 tracks_df = tracks_df.sample(frac=args.sample_size)
-
-# In[70]:
-
-
-tracks_df.sample(20)
-
-# In[71]:
-
-
-tracks_df.valid_genre.values
-
-# In[72]:
-
-
-tracks_df.track_title
-
-
-# In[73]:
-
 
 ## Get complete genre structure
 def get_all_structure(estrutura, df_genres):
@@ -146,77 +96,20 @@ def get_all_structure(estrutura, df_genres):
 
     return get_all_structure_from_df(estrutura, df_genres, structure=[])
 
-
-# In[74]:
-
-
 # tracks_df['valid_genre'] = tracks_df.track_genres.apply(lambda x: x.strip('][').split(', ') if x != '[]' else None)
 tracks_df['valid_genre'] = tracks_df.valid_genre.apply(lambda x: ast.literal_eval(x))
-
-# In[75]:
-
-
 tracks_df['last_genre_id'] = tracks_df.valid_genre.apply(lambda x: x[-1] if x != None else None)
 
-# In[76]:
-
-
-tracks_df.sample(20)
-
-# In[77]:
-
-
 tracks_df.dropna(inplace=True)
-
-# In[78]:
-
-
-tracks_df
-
-# In[79]:
-
-
 tracks_df['full_genre_id'] = tracks_df.last_genre_id.progress_apply(lambda x: get_all_structure(x, genres_df)[::-1])
 
 # In[80]:
 
 
 tracks_df.full_genre_id.value_counts()
-
-# In[81]:
-
-
-tracks_df.columns
-
-# In[82]:
-
-
 tracks_df = tracks_df[['track_id', 'full_genre_id']]
-
-# In[83]:
-
-
-tracks_df.full_genre_id.values
-
-# In[84]:
-
-
-tracks_df.full_genre_id.info
-
-# In[85]:
-
-
 labels_size = tracks_df.full_genre_id.apply(lambda x: len(x))
-
-# In[86]:
-
-
 labels_size = labels_size.max()
-
-
-
-import pandas as pd
-import os
 
 
 # ### Parse of label to structure
@@ -238,11 +131,6 @@ def parse_label(label, label_size=5):
 
 parsed_labels = tracks_df.full_genre_id.apply(lambda x: parse_label(x))
 
-
-tracks_df['full_genre_id']
-
-
-
 def convert_label_to_string(x, level=2):
     return '-'.join([str(value) for value in x[:level]])
 
@@ -253,15 +141,6 @@ tracks_df['labels_2'] = parsed_labels.progress_apply(lambda x: convert_label_to_
 tracks_df['labels_3'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=3))
 tracks_df['labels_4'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=4))
 tracks_df['labels_5'] = parsed_labels.progress_apply(lambda x: convert_label_to_string(x, level=5))
-
-
-
-tracks_df.labels_1.value_counts()
-
-
-
-tracks_df['labels_1'].value_counts()
-
 
 
 tracks_df.to_csv(os.path.join(train_path, "tracks.csv"), index=False)
@@ -301,19 +180,7 @@ def get_labels_name(x, genres_df):
     return full_name
     # return genres_df[genres_df['genre_id'] == int(x)].title.values.tolist()[0]
 
-
-# In[103]:
-
-
 categories_df['level5_name'] = categories_df.level5.apply(lambda x: get_labels_name(x, genres_df))
-
-# In[104]:
-
-
-categories_df
-
-
-# In[105]:
 
 
 def __create_labels__(categories_df):
@@ -381,27 +248,7 @@ def __create_labels__(categories_df):
 
     return data
 
-
-# In[106]:
-
-
 with open(categories_labels_path, 'w+') as f:
     f.write(json.dumps(__create_labels__(categories_df)))
-
-# In[107]:
-
-
-labels = __create_labels__(categories_df)
-
-# In[108]:
-
-
-labels['label4']
-
-# In[ ]:
-
-
-# In[ ]:
-
 
 
