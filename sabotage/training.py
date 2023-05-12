@@ -21,18 +21,17 @@ def run(args):
 
     if tf.test.is_gpu_available():
 
-        with FileIO(args.metadata_path, 'r') as f:
+        with open(args.metadata_path, 'r') as f:
             metadata = json.loads(f.read())
             print(metadata)
 
-        with FileIO(args.labels_path, 'r') as f:
+        with open(args.labels_path, 'r') as f:
             labels = json.loads(f.read())
 
-        with FileIO(args.testset_path, 'rb') as f:
+        with open(args.testset_path, 'rb') as f:
             x_test, y_test, texts_test = pickle.loads(f.read())
 
         params = {
-            'maxlen': metadata['maxlen'],
             'vocab_size': metadata['vocab_size'],
             'first_level_output_size': labels['labels1_count'],
             'second_level_output_size': labels['labels2_count'],
