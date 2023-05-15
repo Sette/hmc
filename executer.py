@@ -28,12 +28,12 @@ args = pd.Series({
     "batch_size":64,
     "epochs":10,
     "dropout":0.5,
-    'patience':3,
+    'patience':1,
     'max_queue_size':64,
     "labels_path": labels_path,
     "metadata_path": metadata_path,
     "trainset_pattern": os.path.join(tfrecords_path,'train'),
-    "testset_pattern": os.path.join(tfrecords_path,'train'),
+    "testset_pattern": os.path.join(tfrecords_path,'test'),
     "valset_pattern": os.path.join(tfrecords_path,'val')
 })
 

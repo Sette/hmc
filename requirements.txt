@@ -1,3 +1,4 @@
 tensorflow
-scikit-learn
-sklearn_hierarchical_classification
+tqdm
+pandas
+numpy

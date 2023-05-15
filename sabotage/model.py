@@ -39,9 +39,12 @@ class OneHotLayer(tf.keras.layers.Layer):
 
 
 
-def build_cnn(x):
-    x = layers.Conv1D(32, 3, activation='relu', padding="valid")(x)
+def build_cnn(input):
+    x = layers.Conv1D(32, 3, activation='relu')(input)
     x = layers.MaxPooling1D()(x)
+    # x = layers.Flatten()(x)
+    
+    
     x = layers.Conv1D(64, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling1D()(x)
     x = layers.Conv1D(128, 3, activation='relu', padding="valid")(x)
@@ -50,18 +53,20 @@ def build_cnn(x):
 
     return x
 
-def build_classification(inputs, size, name,dropout=0.1):
-    x = layers.Concatenate(axis=1)(inputs)
-    x = layers.Dropout(dropout)(x)
-    x = layers.Dense(1024, activation="relu")(x)
-    x = layers.Dropout(dropout)(x)
-    x = layers.Dense(size, activation='softmax', name=name)(x)
-
-    return x
+# def build_classification(inputs, size, name,dropout=0.1):
+#     x = layers.Concatenate(axis=1)(inputs)
+#     x = layers.Dropout(dropout)(x)
+#     x = layers.Dense(1024, activation="relu")(x)
+#     x = layers.Dropout(dropout)(x)
+#     x = layers.Dense(size, activation='softmax', name=name)(x)
+#     return x
 
 def build_model(levels_size, sequence_size, cnn_size=128, dropout=0.1, weights_path=None):
-    music = tf.keras.layers.Input(shape=(sequence_size,sequence_size), dtype=tf.float32, name="music")
-
+    
+    
+    music = tf.keras.layers.Input(shape=(512, sequence_size,), dtype=tf.float32, name="emb")
+    
+    
     cnn = build_cnn(music)
     # outputs = {}
     # input = x
@@ -142,8 +147,12 @@ def build_model(levels_size, sequence_size, cnn_size=128, dropout=0.1, weights_p
         fourth_level_output,
         fifth_level_output,
     ], name="Model-Essentia")
+    
+    
     _load_weights(model, weights_path)
+    
+    
     model.compile(optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0),
-                  loss='categorical_crossentropy', metrics=['accuracy'])
+                  loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
     return model

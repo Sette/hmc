@@ -33,6 +33,7 @@ def run(args: object) -> object:
         'third_level_output_size': labels['label3_count'],
         'fourth_level_output_size': labels['label4_count'],
         'fifth_level_output_size': labels['label5_count']}
+    
 
     params = {
         'levels_size':levels_size,
@@ -47,12 +48,11 @@ def run(args: object) -> object:
     model = build_model(**params)
 
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build()
-
-
-
     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build()
-    print(ds_validation.as_numpy_iterator())
-    return
+    
+    for ds in ds_validation:
+        print(ds)
+    
     callbacks = [EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=args.patience, verbose=1, mode='min')]
     model.fit(ds_train,
               validation_data=ds_validation,
