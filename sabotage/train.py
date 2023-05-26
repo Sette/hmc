@@ -28,16 +28,18 @@ def run(args: object) -> object:
     with open(args.labels_path, 'r') as f:
         labels = json.loads(f.read())
 
-    levels_size = {'first_level_output_size': labels['label1_count'],
-        'second_level_output_size': labels['label2_count'],
-        'third_level_output_size': labels['label3_count'],
-        'fourth_level_output_size': labels['label4_count'],
-        'fifth_level_output_size': labels['label5_count']}
+    levels_size = {'level1_size': labels['label1_count']-1,
+        'level2_size': labels['label2_count']-1,
+        'level3_size': labels['label3_count']-1,
+        'level4_size': labels['label4_count']-1,
+        'level5_size': labels['label5_count']-1}
+    
     
 
     params = {
         'levels_size':levels_size,
         'dropout': args.dropout,
+        'batch_size': args.batch_size,
         'sequence_size':metadata['sequence_size']
     }
 
@@ -47,13 +49,11 @@ def run(args: object) -> object:
 
     model = build_model(**params)
 
-    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build()
-    ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build()
+    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
+    ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
+   
     
-    for ds in ds_validation:
-        print(ds)
-    
-    callbacks = [EarlyStopping(monitor='val_loss', min_delta=0.0001, patience=args.patience, verbose=1, mode='min')]
+    callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
     model.fit(ds_train,
               validation_data=ds_validation,
               steps_per_epoch=metadata['trainset_count'] // args.batch_size,

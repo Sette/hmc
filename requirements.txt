@@ -2,3 +2,5 @@ tensorflow
 tqdm
 pandas
 numpy
+scikit-learn
+ipywidgets

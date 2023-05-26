@@ -15,7 +15,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
 
 base_path = "/mnt/disks/data/fma/trains"
-id = "hierarchical_single"
+id = "hierarchical_all"
 
 
 train_path = os.path.join(base_path,id)
@@ -25,9 +25,9 @@ labels_path = os.path.join(train_path,"labels.json")
 
 
 args = pd.Series({
-    "batch_size":64,
+    "batch_size":32,
     "epochs":10,
-    "dropout":0.5,
+    "dropout":0.1,
     'patience':1,
     'max_queue_size':64,
     "labels_path": labels_path,

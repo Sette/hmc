@@ -1,7 +1,10 @@
 import tensorflow as tf
-
+import multiprocessing
 import pandas as pd
 import os
+
+
+BUFFER_SIZE_3 = 10
 
 def load_dataset(dataset):
         
@@ -26,55 +29,89 @@ class Dataset:
     def build(self,df=False):
         
         files = [os.path.join(self.files,file) for file in os.listdir(self.files)]
-        
-        dataset = tf.data.TFRecordDataset(files)
-        
-        # dataset = dataset.shuffle(buffer_size=1024 * 50 * 10)
 
-        #pass every single feature through our mapping function
-        dataset = dataset.map(
-            self.__parse__
-        )
+        print(files)
+        ds = tf.data.TFRecordDataset(files,num_parallel_reads=multiprocessing.cpu_count())
         
+        '''''
+            Shuffle and reapeat
+        '''''
+        
+        ds = ds.shuffle(buffer_size=1024 * 50 * BUFFER_SIZE_3)
+        ds = ds.repeat(count=self.epochs)
+        
+        
+        '''''
+            Map and batch
+        '''''
+        
+                      
+        ds = ds.map(self.__parse__, num_parallel_calls=None)
+
         if df==True:
-            return load_dataset(dataset)
+            return load_dataset(ds)
         
-        return dataset
-    
-    
+        ds = ds.batch(self.batch_size,drop_remainder=False)
+        
+        
+                      
+        ds = ds.prefetch(buffer_size=5)
+        
+       
+        
+        return ds
     
 
     @staticmethod
     def __parse__(element):
         
         data = {
-            'label1': tf.io.FixedLenFeature([], tf.int64, default_value=-1),
-            'label2': tf.io.FixedLenFeature([], tf.int64, default_value=-1),
-            'label3': tf.io.FixedLenFeature([], tf.int64, default_value=-1),
-            'label4': tf.io.FixedLenFeature([], tf.int64, default_value=-1),
-            'label5': tf.io.FixedLenFeature([], tf.int64, default_value=-1),
-            'emb': tf.io.FixedLenFeature([], tf.string),
+            'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+            'label2': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+            'label3': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+            'label4': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+            'label5': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
+            'features': tf.io.FixedLenFeature([1280], tf.float32),
             'track_id' : tf.io.FixedLenFeature([], tf.int64),
         }
         
         content = tf.io.parse_single_example(element, data)
 
         track_id = content['track_id']
-        emb = tf.io.parse_tensor(content['emb'], out_type=tf.float32)
+        # content['features'] = tf.io.parse_tensor(content['features'], out_type=tf.float32)
         
-
-        label1 = content['label1']
-        label2 = content['label2']
-        label3 = content['label3']
-        label4 = content['label4']
-        label5 = content['label5']
         
-        inp = {"emb":emb }
+        label1 = tf.cast(content['label1'], tf.int32)
+        label1_hot = tf.one_hot(label1[0], label1[1])
 
-        labels = {'first_level_output': label1,
-               'second_level_output': label2,
-               'third_level_output': label3,
-               'fourth_level_output': label4,
-               'fifth_level_output':label5}
+        # label2 = tf.cast(content['label2'], tf.int32)
+        # label2_hot = tf.one_hot(label2[0], label2[1])
+
+        # label3 = tf.cast(content['label3'], tf.int32)
+        # label3_hot = tf.one_hot(label3[0], label3[1])
+
+        # label4 = tf.cast(content['label4'], tf.int32)
+        # label4_hot = tf.one_hot(label4[0], label4[1])
+        
+        # label5 = tf.cast(content['label5'], tf.int32)
+        # label5_hot = tf.one_hot(label5[0], label5[1])
+        
+        
+#         label1 = content['label1']
+#         label2 = content['label2']
+#         label3 = content['label3']
+#         label4 = content['label4']
+#         label5 = content['label5']
+        
+        inp = {"features":content['features'] }
+
+        
+        labels = {'level1': label1_hot}
+        
+#         labels = {'level1_output': label1,
+#                'level2_output': label2,
+#                'level3_output': label3,
+#                'level4_output': label4,
+#                'level5_output': label5}
 
         return inp, labels
