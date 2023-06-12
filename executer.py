@@ -27,7 +27,7 @@ labels_path = os.path.join(train_path,"labels.json")
 args = pd.Series({
     "batch_size":32,
     "epochs":10,
-    "dropout":0.1,
+    "dropout":0.5,
     'patience':1,
     'max_queue_size':64,
     "labels_path": labels_path,

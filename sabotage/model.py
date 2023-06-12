@@ -67,7 +67,7 @@ def build_classification(inputs, size, name):
 
 
 
-def build_model(levels_size, sequence_size, batch_size=32, cnn_size=128,lstm_size=256, dropout=0.1, weights_path=None):
+def build_model(levels_size, sequence_size, batch_size=32, cnn_size=128, lstm_size=256, dropout=0.1, weights_path=None):
 
     input_shape = (1280,1)
     
@@ -75,19 +75,23 @@ def build_model(levels_size, sequence_size, batch_size=32, cnn_size=128,lstm_siz
 
     x = Normalization(input_shape=[1280,1], axis=None)(music)
 
-    x = layers.Conv1D(128, 3, activation='relu', padding="valid")(x)
-    x = layers.MaxPooling1D()(x)
-    x = layers.Conv1D(64, 3, activation='relu', padding="valid")(x)
-    x = layers.MaxPooling1D()(x)
+    
     x = layers.Conv1D(32, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling1D()(x)
+    
+    x = layers.Conv1D(64, 3, activation='relu', padding="valid")(x)
+    x = layers.MaxPooling1D()(x)
+    
+    x = layers.Conv1D(128, 3, activation='relu', padding="valid")(x)
+    x = layers.MaxPooling1D()(x)
+    
 
     
     x = layers.Flatten()(x)
 
     
     ## First Classification Level
-    x = Dense(1024, activation='relu')(x)
+    x = Dense(512, activation='relu')(x)
     x = Dropout(dropout)(x)
     x = Dense(128, activation='relu')(x)
     x = Dropout(dropout)(x)
