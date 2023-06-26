@@ -1,8 +1,10 @@
 import json
 import os
+
+
+from keras import Model
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
-
 
 from multiprocessing import cpu_count
 
@@ -17,9 +19,8 @@ print("GPU is available: {}".format(tf.test.is_gpu_available()))
 print("==============================================================")
 
 
-def run(args: object) -> object:
+def run(args: object):
     print(args)
-
 
     with open(args.metadata_path, 'r') as f:
         metadata = json.loads(f.read())
@@ -28,31 +29,22 @@ def run(args: object) -> object:
     with open(args.labels_path, 'r') as f:
         labels = json.loads(f.read())
 
-    levels_size = {'level1_size': labels['label1_count']-1,
-        'level2_size': labels['label2_count']-1,
-        'level3_size': labels['label3_count']-1,
-        'level4_size': labels['label4_count']-1,
-        'level5_size': labels['label5_count']-1}
-    
-    
+    levels_size = {'level1': labels['label1_count'] ,
+                   'level2': labels['label2_count'] ,
+                   'level3': labels['label3_count'] ,
+                   'level4': labels['label4_count'] ,
+                   'level5': labels['label5_count'] }
 
-    params = {
-        'levels_size':levels_size,
-        'dropout': args.dropout,
-        'batch_size': args.batch_size,
-        'sequence_size':metadata['sequence_size']
+    params: dict = {
+        'levels_size': levels_size,
+        'sequence_size': metadata['sequence_size'],
+        'dropout': args.dropout
     }
 
-    print("======================== Model Params ========================")
     print(params)
-    print("==============================================================")
-
     model = build_model(**params)
-
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
-   
-    
     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
     model.fit(ds_train,
               validation_data=ds_validation,
@@ -63,4 +55,3 @@ def run(args: object) -> object:
               workers=cpu_count(),
               use_multiprocessing=True,
               callbacks=callbacks)
-

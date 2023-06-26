@@ -1,4 +1,5 @@
 tensorflow
+keras
 tqdm
 pandas
 numpy
