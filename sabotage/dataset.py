@@ -62,6 +62,11 @@ class Dataset:
     @staticmethod
     def __parse__(element):
         
+        
+        # Definição dos nomes das colunas correspondentes em cada nível
+        column_names = ['label1', 'label2', 'label3', 'label4', 'label5']
+        
+        
         data = {
             'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'label2': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
@@ -72,33 +77,41 @@ class Dataset:
             'track_id' : tf.io.FixedLenFeature([], tf.int64),
         }
         
+        
         content = tf.io.parse_single_example(element, data)
 
         track_id = content['track_id']
-        label1 = tf.cast(content['label1'], tf.int32)
-        label1_hot = tf.one_hot(label1[0], label1[1])
+        
+        
+        labels = {}
+        for i in range(len(column_names)):
+            labels[column_names[i]] = content[column_names[i]]
+        
+        
+#         label1 = tf.cast(content['label1'], tf.int32)
+#         label1_hot = tf.one_hot(label1[0], label1[1])
 
-        label2 = tf.cast(content['label2'], tf.int32)
-        label2_hot = tf.one_hot(label2[0], label2[1])
+#         label2 = tf.cast(content['label2'], tf.int32)
+#         label2_hot = tf.one_hot(label2[0], label2[1])
 
-        label3 = tf.cast(content['label3'], tf.int32)
-        label3_hot = tf.one_hot(label3[0], label3[1])
+#         label3 = tf.cast(content['label3'], tf.int32)
+#         label3_hot = tf.one_hot(label3[0], label3[1])
 
-        label4 = tf.cast(content['label4'], tf.int32)
-        label4_hot = tf.one_hot(label4[0], label4[1])
+#         label4 = tf.cast(content['label4'], tf.int32)
+#         label4_hot = tf.one_hot(label4[0], label4[1])
 
-        label5 = tf.cast(content['label5'], tf.int32)
-        label5_hot = tf.one_hot(label5[0], label5[1])
+#         label5 = tf.cast(content['label5'], tf.int32)
+#         label5_hot = tf.one_hot(label5[0], label5[1])
 
         
-        inp = {"features":content['features'] }
+        features = content['features']
 
 
-        labels = {'level1_output': label1_hot,
-               'level2_output': label2_hot,
-               'level3_output': label3_hot,
-               'level4_output': label4_hot,
-               'level5_output': label5_hot
-        }
+        # labels = {'level1_output': label1_hot,
+        #        'level2_output': label2_hot,
+        #        'level3_output': label3_hot,
+        #        'level4_output': label4_hot,
+        #        'level5_output': label5_hot
+        # }
 
-        return inp, labels
+        return features,labels

@@ -35,7 +35,7 @@ def build_cnn(feature, input_shape):
     return x
 
 
-def build_classification(x, levels_size, dropout, input_shape=1024, name='default'):
+def build_level_classifier(x, levels_size, dropout, input_shape=1024, name='default'):
     x: object = Dense(input_shape, activation='relu')(x)
     x = Dropout(dropout)(x)
     x = Dense(input_shape/2, activation='relu')(x)
@@ -47,41 +47,14 @@ def build_classification(x, levels_size, dropout, input_shape=1024, name='defaul
     return x
 
 
-def build_model(levels_size: dict, sequence_size: int = 1280, dropout: float = 0.1) -> tf.keras.models.Model:
-    """
+def build_node_classifier(x, num_classes, node, level, dropout, input_shape=256):
+    x: object = Dense(input_shape, activation='relu')(x)
+    x = Dropout(dropout)(x)
+    x = Dense(num_classes, activation='softmax', name=f'{level}-{node}-local')(x)
+    
 
-    :rtype: tf.keras.models.Model
-    """
-    input_shape = (sequence_size, 1)
-    music = Input(shape=input_shape, dtype=tf.float32, name="features")
-    fcn_size = 1024
+    return x
 
-    x: object = build_cnn(music, input_shape)
-
-    first = build_classification(x, levels_size, dropout, input_shape=fcn_size, name='level1')
-    second_input = Concatenate(axis=1)([OutputNormalization()(first), x])
-    second = build_classification(second_input, levels_size, dropout, input_shape=fcn_size+levels_size['level1'], name='level2')
-    third_input = Concatenate(axis=1)([OutputNormalization()(second), x])
-    third = build_classification(third_input, levels_size, dropout, input_shape=fcn_size+levels_size['level2'], name='level3')
-    fourth_input = Concatenate(axis=1)([OutputNormalization()(third), x])
-    fourth = build_classification(fourth_input, levels_size, dropout, input_shape=fcn_size+levels_size['level3'], name='level4')
-    fifth_input = Concatenate(axis=1)([OutputNormalization()(fourth), x])
-    fifth = build_classification(fifth_input, levels_size, dropout, input_shape=fcn_size+levels_size['level4'], name='level5')
-
-    model = tf.keras.models.Model([music], [
-        first,
-        second,
-        third,
-        fourth,
-        fifth,
-    ], name="Essentia")
-
-    #     _load_weights(model, weights_path)
-
-    model.compile(optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0),
-                  loss='categorical_crossentropy', metrics=['accuracy'])
-
-    return model
 
 
 
@@ -95,32 +68,24 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
     music = Input(shape=input_shape, dtype=tf.float32, name="features")
     fcn_size = 1024
 
-
-    # # Camadas convolucionais compartilhadas
-    # inputs = tf.keras.Input(shape=input_shape)
-    # conv1 = layers.Conv2D(32, kernel_size=(3, 3), activation="relu")(inputs)
-    # conv2 = layers.Conv2D(64, kernel_size=(3, 3), activation="relu")(conv1)
-    # # ...
-
     x: object = build_cnn(music, input_shape)
-    
     
     
     # Camadas para cada nível da hierarquia
     level_outputs = []
     prev_level_output = x
+    for level in range(len(num_nodes_per_level)):
+        node_outputs = []
+        num_nodes = len(num_nodes_per_level[level])
+        num_classes = len(num_classes_per_node[level])
+        
+              
+        for node in range(num_nodes):
+            node_output = build_node_classifier(prev_level_output, num_classes, node, level, dropout, input_shape=256)
+            node_outputs.append(node_output)
 
-    for i in range(len(num_nodes_per_level)):
-        level_node_outputs = []
-        for j in range(len(num_nodes_per_level[i])):
-            # node_conv = layers.Conv1D(128, 3, activation='relu', padding="valid")(prev_level_output)
-            # node_flatten = layers.Flatten()(node_conv)
-            node_dense = layers.Dense(256, activation="relu")(prev_level_output)
-            node_output = layers.Dense(num_nodes_per_level[i][j], activation="softmax")(node_dense)
-            level_node_outputs.append(node_output)
-    
-        prev_level_output = layers.concatenate(level_node_outputs)
-        level_outputs.extend(level_node_outputs)
+        prev_level_output = layers.concatenate(node_outputs)
+        level_outputs.extend(node_outputs)
 
     # Concatenação das saídas de todos os níveis
     merged_output = layers.concatenate(level_outputs)
@@ -128,7 +93,7 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
     # Lista de funções de perda por nó
     loss_functions = []
     for i in range(len(num_nodes_per_level)):
-        for j in range(len(num_nodes_per_level[i])):
+        for j in range(len(num_classes_per_node[i])):
             loss = tf.keras.losses.CategoricalCrossentropy()
             loss_functions.append(loss)
 

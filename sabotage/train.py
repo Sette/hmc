@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from multiprocessing import cpu_count
 
-from sabotage.model import build_model, build_hierarchical_model
+from sabotage.model import build_hierarchical_model
 # from sabotage.model.callback import ValidateCallback, BackupAndRestoreCheckpoint
 from sabotage.dataset import Dataset
 
