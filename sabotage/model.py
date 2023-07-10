@@ -84,11 +84,11 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
             node_output = build_node_classifier(prev_level_output, num_classes, node, level, dropout, input_shape=256)
             node_outputs.append(node_output)
 
-        prev_level_output = layers.concatenate(node_outputs)
+        prev_level_output = layers.concatenate(node_outputs,name=f'layer{level}')
         level_outputs.extend(node_outputs)
 
     # Concatenação das saídas de todos os níveis
-    merged_output = layers.concatenate(level_outputs)
+    merged_output = layers.concatenate(level_outputs,name=f'global')
 
     # Lista de funções de perda por nó
     loss_functions = []
