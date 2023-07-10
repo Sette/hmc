@@ -15,7 +15,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
 
 base_path = "/mnt/disks/data/fma/trains"
-id = "hierarchical_all"
+id = "hierarchical_local_sample"
 
 
 train_path = os.path.join(base_path,id)

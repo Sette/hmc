@@ -28,8 +28,8 @@ def build_cnn(feature, input_shape):
     x = layers.MaxPooling1D()(x)
     x = layers.Conv1D(64, 3, activation='relu', padding="valid")(x)
     x = layers.MaxPooling1D()(x)
-    x = layers.Conv1D(32, 3, activation='relu', padding="valid")(x)
-    x = layers.MaxPooling1D()(x)
+    # x = layers.Conv1D(32, 3, activation='relu', padding="valid")(x)
+    # x = layers.MaxPooling1D()(x)
     x = layers.Flatten()(x)
 
     return x
@@ -86,7 +86,7 @@ def build_model(levels_size: dict, sequence_size: int = 1280, dropout: float = 0
 
 
 # Definição do modelo
-def hierarchical_model(num_nodes_per_level, num_classes_per_node, loss_weights):
+def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: list, sequence_size: int = 1280, dropout: float = 0.1) -> tf.keras.models.Model:
     """
 
     :rtype: tf.keras.models.Model
@@ -96,25 +96,29 @@ def hierarchical_model(num_nodes_per_level, num_classes_per_node, loss_weights):
     fcn_size = 1024
 
 
-    # Camadas convolucionais compartilhadas
-    inputs = tf.keras.Input(shape=input_shape)
-    conv1 = layers.Conv2D(32, kernel_size=(3, 3), activation="relu")(inputs)
-    conv2 = layers.Conv2D(64, kernel_size=(3, 3), activation="relu")(conv1)
-    # ...
+    # # Camadas convolucionais compartilhadas
+    # inputs = tf.keras.Input(shape=input_shape)
+    # conv1 = layers.Conv2D(32, kernel_size=(3, 3), activation="relu")(inputs)
+    # conv2 = layers.Conv2D(64, kernel_size=(3, 3), activation="relu")(conv1)
+    # # ...
 
+    x: object = build_cnn(music, input_shape)
+    
+    
+    
     # Camadas para cada nível da hierarquia
     level_outputs = []
-    prev_level_output = conv2
+    prev_level_output = x
 
     for i in range(len(num_nodes_per_level)):
         level_node_outputs = []
-        for j in range(num_nodes_per_level[i]):
-            node_conv = layers.Conv2D(128, kernel_size=(3, 3), activation="relu")(prev_level_output)
-            node_flatten = layers.Flatten()(node_conv)
-            node_dense = layers.Dense(256, activation="relu")(node_flatten)
-            node_output = layers.Dense(num_classes_per_node[i][j], activation="softmax")(node_dense)
+        for j in range(len(num_nodes_per_level[i])):
+            # node_conv = layers.Conv1D(128, 3, activation='relu', padding="valid")(prev_level_output)
+            # node_flatten = layers.Flatten()(node_conv)
+            node_dense = layers.Dense(256, activation="relu")(prev_level_output)
+            node_output = layers.Dense(num_nodes_per_level[i][j], activation="softmax")(node_dense)
             level_node_outputs.append(node_output)
-
+    
         prev_level_output = layers.concatenate(level_node_outputs)
         level_outputs.extend(level_node_outputs)
 
@@ -124,7 +128,7 @@ def hierarchical_model(num_nodes_per_level, num_classes_per_node, loss_weights):
     # Lista de funções de perda por nó
     loss_functions = []
     for i in range(len(num_nodes_per_level)):
-        for j in range(num_nodes_per_level[i]):
+        for j in range(len(num_nodes_per_level[i])):
             loss = tf.keras.losses.CategoricalCrossentropy()
             loss_functions.append(loss)
 
@@ -135,7 +139,7 @@ def hierarchical_model(num_nodes_per_level, num_classes_per_node, loss_weights):
         return tf.reduce_sum(weighted_losses)
 
     # Modelo final
-    model = tf.keras.Model(inputs=inputs, outputs=merged_output)
+    model = tf.keras.Model(inputs=music, outputs=merged_output)
     model.compile(optimizer="adam", loss=hierarchical_loss, metrics=["accuracy"])
 
     return model

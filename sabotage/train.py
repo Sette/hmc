@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from multiprocessing import cpu_count
 
-from sabotage.model import build_model
+from sabotage.model import build_model, build_hierarchical_model
 # from sabotage.model.callback import ValidateCallback, BackupAndRestoreCheckpoint
 from sabotage.dataset import Dataset
 
@@ -36,13 +36,14 @@ def run(args: object):
                    'level5': labels['label5_count'] }
 
     params: dict = {
-        'levels_size': levels_size,
+        'num_nodes_per_level': metadata['num_nodes_per_level'],
+        'num_classes_per_node': metadata['num_classes_per_node'],
         'sequence_size': metadata['sequence_size'],
         'dropout': args.dropout
     }
 
     print(params)
-    model = build_model(**params)
+    model = build_hierarchical_model(**params)
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
