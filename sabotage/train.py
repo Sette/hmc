@@ -38,7 +38,7 @@ def run(args: object):
         'num_classes_per_node': metadata['num_classes_per_node'],
         'sequence_size': metadata['sequence_size'],
         'dropout': args.dropout
-    }
+    } 
 
     model = build_hierarchical_model(**params)
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
