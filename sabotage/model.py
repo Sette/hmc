@@ -50,7 +50,7 @@ def build_level_classifier(x, levels_size, dropout, input_shape=1024, name='defa
 def build_node_classifier(x, num_classes, node, level, dropout, input_shape=256):
     x: object = Dense(input_shape, activation='relu')(x)
     x = Dropout(dropout)(x)
-    x = Dense(num_classes, activation='softmax', name=f'{level}-{node}-local')(x)
+    x = Dense(num_classes, activation='softmax', name=f'{level+1}-{node}-local')(x)
     
 
     return x
@@ -83,12 +83,12 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
         for node in range(num_nodes):
             node_output = build_node_classifier(prev_level_output, num_classes, node, level, dropout, input_shape=256)
             node_outputs.append(node_output)
-
-        prev_level_output = layers.concatenate(node_outputs,name=f'layer{level}')
-        level_outputs.extend(node_outputs)
+        
+        prev_level_output = layers.concatenate(node_outputs, name=f'level{level+1}')
+        level_outputs.append(prev_level_output)
 
     # Concatenação das saídas de todos os níveis
-    merged_output = layers.concatenate(level_outputs,name=f'global')
+    merged_output = layers.concatenate(level_outputs,name='global')
 
     # Lista de funções de perda por nó
     loss_functions = []
@@ -100,11 +100,12 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
     # Função de perda total
     def hierarchical_loss(y_true, y_pred):
         losses = [loss_fn(y_true[:, i], y_pred[:, i]) for i, loss_fn in enumerate(loss_functions)]
-        weighted_losses = [loss * weight for loss, weight in zip(losses, loss_weights)]
-        return tf.reduce_sum(weighted_losses)
-
+        # weighted_losses = [loss * weight for loss, weight in zip(losses, loss_weights)]
+        # return tf.reduce_sum(losses)
+        return losses
+    
     # Modelo final
-    model = tf.keras.Model(inputs=music, outputs=merged_output)
+    model = tf.keras.Model(inputs=music, outputs=level_outputs)
     model.compile(optimizer="adam", loss=hierarchical_loss, metrics=["accuracy"])
 
     return model

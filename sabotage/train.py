@@ -20,8 +20,6 @@ print("==============================================================")
 
 
 def run(args: object):
-    print(args)
-
     with open(args.metadata_path, 'r') as f:
         metadata = json.loads(f.read())
         print(metadata)
@@ -42,7 +40,6 @@ def run(args: object):
         'dropout': args.dropout
     }
 
-    print(params)
     model = build_hierarchical_model(**params)
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)

@@ -42,7 +42,6 @@ if __name__ == '__main__':
     time_start = dt.utcnow()
     print("[{}] Experiment started at {}".format(id, time_start.strftime("%H:%M:%S")))
     print(".......................................")
-    print(args)
     run(args)
     time_end = dt.utcnow()
     time_elapsed = time_end - time_start
