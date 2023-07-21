@@ -16,12 +16,32 @@ def load_dataset(dataset):
 
     return df
 
+def get_labels(content,level,node): 
+    
+    
+    if level = 0:
+        labels = tf.cast(content['label1'], tf.int32)
+        return labels
+    
+    if name.startswith('1'):
+        return tf.cast(content['label1'], tf.int32)
+    elif name.startswith('2'):
+        return tf.cast(content['label2'], tf.int32)
+    elif name.startswith('3'):
+        return tf.cast(content['label3'], tf.int32)
+    elif name.startswith('4'):
+        return tf.cast(content['label4'], tf.int32)
+    elif name.startswith('5'):
+        return tf.cast(content['label5'], tf.int32)
+
 
 class Dataset:
-    def __init__(self,files,epochs, batch_size):
+    def __init__(self,files,epochs, batch_size,num_nodes_per_level,num_classes_per_node):
         self.epochs = epochs
         self.batch_size = batch_size
         self.files = files
+        self.num_classes_per_node = num_classes_per_node
+        self.num_nodes_per_level = num_nodes_per_level
 
     def build(self,df=False):
         
@@ -59,13 +79,10 @@ class Dataset:
         return ds
     
 
-    @staticmethod
-    def __parse__(element):
+    def __parse__(self,element):
         
         
-        # Definição dos nomes das colunas correspondentes em cada nível
-        column_names = ['label1', 'label2', 'label3', 'label4', 'label5']
-        
+        ### Estrutura dos tfrecords
         
         data = {
             'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
@@ -83,35 +100,51 @@ class Dataset:
         track_id = content['track_id']
         
         
+        # Definição dos nomes das colunas correspondentes em cada nível
+        output_names = []
         labels = {}
-        for i in range(len(column_names)):
-            labels[column_names[i]] = content[column_names[i]]
+        
+        for level in range(len(self.num_nodes_per_level)):
+            node_outputs = []
+            num_nodes = self.num_nodes_per_level[level]
+            for node in range(num_nodes):
+                num_classes = self.num_classes_per_node[level][node]
+                output_name = f'{level+1}-{node}-local'
+                labels[output_name] = get_labels(content,level,node)
+                output_names.append(output_name)
+        
+       
         
         
-        label1 = tf.cast(content['label1'], tf.int32)
-        label1_hot = tf.one_hot(label1[0], label1[1])
+        labels = {}
+        for i in range(len(output_names)):
+            labels[output_names[i]] = get_labels(content,name=output_names[i])
+        
+        
+#         label1 = tf.cast(content['label1'], tf.int32)
+#         label1_hot = tf.one_hot(label1[0], label1[1])
 
-        label2 = tf.cast(content['label2'], tf.int32)
-        label2_hot = tf.one_hot(label2[0], label2[1])
+#         label2 = tf.cast(content['label2'], tf.int32)
+#         label2_hot = tf.one_hot(label2[0], label2[1])
 
-        label3 = tf.cast(content['label3'], tf.int32)
-        label3_hot = tf.one_hot(label3[0], label3[1])
+#         label3 = tf.cast(content['label3'], tf.int32)
+#         label3_hot = tf.one_hot(label3[0], label3[1])
 
-        label4 = tf.cast(content['label4'], tf.int32)
-        label4_hot = tf.one_hot(label4[0], label4[1])
+#         label4 = tf.cast(content['label4'], tf.int32)
+#         label4_hot = tf.one_hot(label4[0], label4[1])
 
-        label5 = tf.cast(content['label5'], tf.int32)
-        label5_hot = tf.one_hot(label5[0], label5[1])
+#         label5 = tf.cast(content['label5'], tf.int32)
+#         label5_hot = tf.one_hot(label5[0], label5[1])
 
         
         features = content['features']
 
 
-        labels = {'level1': label1,
-               'level2': label2,
-               'level3': label3,
-               'level4': label4,
-               'level5': label5
-        }
+        # labels = {'level1': label1,
+        #        'level2': label2,
+        #        'level3': label3,
+        #        'level4': label4,
+        #        'level5': label5
+        # }
 
         return features,labels

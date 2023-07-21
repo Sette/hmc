@@ -24,25 +24,27 @@ def run(args: object):
         metadata = json.loads(f.read())
         print(metadata)
 
+    num_nodes_per_level = metadata['num_nodes_per_level']
+    num_classes_per_node = metadata['num_classes_per_node']
     with open(args.labels_path, 'r') as f:
         labels = json.loads(f.read())
-
-    levels_size = {'level1': labels['label1_count'] ,
-                   'level2': labels['label2_count'] ,
-                   'level3': labels['label3_count'] ,
-                   'level4': labels['label4_count'] ,
-                   'level5': labels['label5_count'] }
+    
+    # levels_size = {'level1': labels['label1_count'] ,
+    #                'level2': labels['label2_count'] ,
+    #                'level3': labels['label3_count'] ,
+    #                'level4': labels['label4_count'] ,
+    #                'level5': labels['label5_count'] }
 
     params: dict = {
-        'num_nodes_per_level': metadata['num_nodes_per_level'],
-        'num_classes_per_node': metadata['num_classes_per_node'],
+        'num_nodes_per_level': num_nodes_per_level,
+        'num_classes_per_node': num_classes_per_node,
         'sequence_size': metadata['sequence_size'],
         'dropout': args.dropout
     } 
 
     model = build_hierarchical_model(**params)
-    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
-    ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
+    ds_train = Dataset(args.trainset_pattern, args.epochs,args.batch_size,num_nodes_per_level, num_classes_per_node).build(df=False)
+    ds_validation = Dataset(args.valset_pattern, args.epochs,args.batch_size,num_nodes_per_level, num_classes_per_node).build(df=False)
     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
     model.fit(ds_train,
               validation_data=ds_validation,

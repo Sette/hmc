@@ -51,28 +51,10 @@ def build_node_classifier(x, num_classes, node, level, dropout, input_shape=256)
     x: object = Dense(input_shape, activation='relu')(x)
     x = Dropout(dropout)(x)
     x = Dense(num_classes, activation='softmax', name=f'{level+1}-{node}-local')(x)
-    
 
     return x
 
-def hierarchical_loss(y_true, y_pred):
-    losses = []
-    node_losses = []
-    for level in range(len(num_nodes_per_level)):
-        num_nodes = num_nodes_per_level[level]
-        num_classes = num_classes_per_node[level]
-        level_true = y_true[level]
-        level_pred = y_pred[level]
-        level_loss = tf.keras.losses.CategoricalCrossentropy()(level_true, level_pred)
-        losses.append(level_loss)
 
-        for node in range(num_nodes):
-            node_true = level_true[:, node]
-            node_pred = level_pred[:, node]
-            node_loss = tf.keras.losses.CategoricalCrossentropy()(node_true, node_pred)
-            node_losses.append(node_loss)
-
-    return tf.reduce_mean(losses), node_losses
 
 
 # Definição do modelo
@@ -97,13 +79,12 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
         node_outputs = []
         num_nodes = num_nodes_per_level[level]
         num_classes = num_classes_per_node[level]
-        for j in range(num_nodes):
-            
+        for node in range(num_nodes):
             # Possivel rede conv ou afins
             # node_conv = layers.Conv2D(128, kernel_size=(3, 3), activation="relu")(prev_level_output)
             # node_flatten = layers.Flatten()(node_conv)
             
-            node_output = build_node_classifier(prev_level_output, num_classes, node, level, dropout, input_shape=256)
+            node_output = build_node_classifier(prev_level_output, num_classes[node], node, level, dropout, input_shape=256)
             
             node_outputs.append(node_output)
 
@@ -114,9 +95,28 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
     # Concatenação das saídas de todos os níveis
     # merged_output = layers.concatenate(level_outputs)
 
+    
+    def hierarchical_loss(y_true, y_pred):
+        losses = []
+        node_losses = []
+        for level in range(len(num_nodes_per_level)):
+            num_nodes = num_nodes_per_level[level]
+            num_classes = num_classes_per_node[level]
+            level_true = y_true[level]
+            level_pred = y_pred[level]
+            level_loss = tf.keras.losses.CategoricalCrossentropy()(level_true, level_pred)
+            losses.append(level_loss)
+
+            for node in range(num_nodes):
+                node_true = level_true[node]
+                node_pred = level_pred[node]
+                node_loss = tf.keras.losses.CategoricalCrossentropy()(node_true, node_pred)
+                node_losses.append(node_loss)
+
+        return tf.reduce_mean(losses), node_losses
 
     # Modelo final
-    model = tf.keras.Model(inputs=music, outputs=level_oulevel_outputstputs)
+    model = tf.keras.Model(inputs=music, outputs=level_outputs)
     model.compile(optimizer="adam", loss=hierarchical_loss, metrics=["accuracy"])
 
     return model
