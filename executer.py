@@ -7,15 +7,8 @@ from sabotage.train import run
 
 import tensorflow as tf
 
-
-# Set python level verbosity
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
-
-# Set C++ Graph Execution level verbosity
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
-
 base_path = "/mnt/disks/data/fma/trains"
-id = "hierarchical_local_sample"
+id = "hierarchical_local_partial"
 
 
 train_path = os.path.join(base_path,id)
