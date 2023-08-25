@@ -63,10 +63,7 @@ class Dataset:
     
 
     def __parse__(self,element):
-        
-        
         ### Estrutura dos tfrecords
-        
         data = {
             'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'label2': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
@@ -81,22 +78,6 @@ class Dataset:
         content = tf.io.parse_single_example(element, data)
 
         track_id = content['track_id']
-        
-        
-#         # Definição dos nomes das colunas correspondentes em cada nível
-#         output_names = []
-#         labels = {}
-        
-#         for level in range(len(self.num_nodes_per_level)):
-#             node_outputs = []
-#             num_nodes = self.num_nodes_per_level[level]
-#             for node in range(num_nodes):
-#                 num_classes = self.num_classes_per_node[level][node]
-#                 output_name = f'{level+1}-{node}-local'
-#                 labels[output_name] = get_labels(content,level,node)
-#                 output_names.append(output_name)
-        
-       
         
         
         label1 = tf.cast(content['label1'], tf.int32)
@@ -116,17 +97,23 @@ class Dataset:
 
         
         features = content['features']
-        
-        
-         # Labels locais
-        local_labels_list = [label5_hot]
 
 
-        global_labels = {'level1': label1,
+        global_labels_list = {'level1': label1,
                'level2': label2,
                'level3': label3,
                'level4': label4,
                'level5': label5
         }
+        
 
-        return features,global_labels,local_labels_list
+        # Labels locais
+        local_labels_list = [
+            tf.sparse.to_dense(label1_hot),
+            tf.sparse.to_dense(label2_hot),
+            tf.sparse.to_dense(label3_hot),
+            tf.sparse.to_dense(label4_hot),
+            tf.sparse.to_dense(label5_hot)
+        ]
+
+        return features,global_labels_list,local_labels_list
