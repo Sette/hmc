@@ -6,21 +6,10 @@ import os
 
 BUFFER_SIZE_3 = 10
 
-# Formatando as labels locais corretamente
-@tf.function
-def format_local_labels(*args):
-    local_labels_list = args[2]
-
-    # Concatena as labels globais com as labels locais para formar a lista de saídas do modelo
-    model_outputs = local_labels_list
-
-    return args[0], model_outputs
-
-
 def load_dataset(dataset):
     df = pd.DataFrame(
         dataset.as_numpy_iterator(),
-        columns=['feature','genres_globais']
+        columns=['feature','genres']
     )
 
     df.dropna(inplace=True)
@@ -28,55 +17,38 @@ def load_dataset(dataset):
     return df
 
 
-
 class Dataset:
-    def __init__(self,files,epochs, batch_size,num_nodes_per_level,num_classes_per_node):
+    def __init__(self,files,epochs, batch_size,num_nodes_per_level, num_classes_per_node):
         self.epochs = epochs
         self.batch_size = batch_size
-        self.files = files
-        self.num_classes_per_node = num_classes_per_node
         self.num_nodes_per_level = num_nodes_per_level
-        
+        self.num_classes_per_node = num_classes_per_node
+        self.files = files
+
     def build(self,df=False):
-        
         files = [os.path.join(self.files,file) for file in os.listdir(self.files)]
 
-        
+        print(files)
         ds = tf.data.TFRecordDataset(files,num_parallel_reads=multiprocessing.cpu_count())
-        
         '''''
             Shuffle and reapeat
         '''''
-        
         ds = ds.shuffle(buffer_size=1024 * 50 * BUFFER_SIZE_3)
         ds = ds.repeat(count=self.epochs)
-        
         
         '''''
             Map and batch
         '''''
-        
-                      
         ds = ds.map(self.__parse__, num_parallel_calls=None)
-        
-        ds = ds.map(format_local_labels)
 
         if df==True:
             return load_dataset(ds)
-        
         ds = ds.batch(self.batch_size,drop_remainder=False)
-        
-        
-                      
         ds = ds.prefetch(buffer_size=5)
-        
-       
-        
-        return ds
-    
+        return df
 
-    def __parse__(self,element):
-        ### Estrutura dos tfrecords
+    @staticmethod
+    def __parse__(element):
         data = {
             'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'label2': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
@@ -84,15 +56,10 @@ class Dataset:
             'label4': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'label5': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'features': tf.io.FixedLenFeature([1280], tf.float32),
-            'track_id' : tf.io.FixedLenFeature([], tf.int64),
+            'track_id': tf.io.FixedLenFeature([], tf.int64)
         }
-        
-        
         content = tf.io.parse_single_example(element, data)
-
         track_id = content['track_id']
-        
-        
         label1 = tf.cast(content['label1'], tf.int32)
         label1_hot = tf.one_hot(label1[0], label1[1])
 
@@ -108,16 +75,18 @@ class Dataset:
         label5 = tf.cast(content['label5'], tf.int32)
         label5_hot = tf.one_hot(label5[0], label5[1])
 
+        inp = {"features": content['features']}
         
-        features = content['features']
-
-
-        global_labels_list = [
-            label1,
-            label2,
-            label3,
-            label4,
-            label5]
         
+        for i in self.num_nodes_per_level:
+            print(f'nodes per level: {i}')
 
-        return features,global_labels_list
+        labels = {
+            'level1_output': label1_hot,
+            'level2_output': label2_hot,
+            'level3_output': label3_hot,
+            'level4_output': label4_hot,
+            'level5_output': label5_hot
+        }
+
+        return inp, labels
