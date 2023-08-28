@@ -6,10 +6,21 @@ import os
 
 BUFFER_SIZE_3 = 10
 
+# Formatando as labels locais corretamente
+@tf.function
+def format_local_labels(*args):
+    local_labels_list = args[2]
+
+    # Concatena as labels globais com as labels locais para formar a lista de saídas do modelo
+    model_outputs = local_labels_list
+
+    return args[0], model_outputs
+
+
 def load_dataset(dataset):
     df = pd.DataFrame(
         dataset.as_numpy_iterator(),
-        columns=['feature','genres_globais',]
+        columns=['feature','genres_globais']
     )
 
     df.dropna(inplace=True)
@@ -25,7 +36,7 @@ class Dataset:
         self.files = files
         self.num_classes_per_node = num_classes_per_node
         self.num_nodes_per_level = num_nodes_per_level
-
+        
     def build(self,df=False):
         
         files = [os.path.join(self.files,file) for file in os.listdir(self.files)]
@@ -47,6 +58,8 @@ class Dataset:
         
                       
         ds = ds.map(self.__parse__, num_parallel_calls=None)
+        
+        ds = ds.map(format_local_labels)
 
         if df==True:
             return load_dataset(ds)
@@ -99,21 +112,12 @@ class Dataset:
         features = content['features']
 
 
-        global_labels_list = {'level1': label1,
-               'level2': label2,
-               'level3': label3,
-               'level4': label4,
-               'level5': label5
-        }
+        global_labels_list = [
+            label1,
+            label2,
+            label3,
+            label4,
+            label5]
         
 
-        # Labels locais
-        local_labels_list = [
-            tf.sparse.to_dense(label1_hot),
-            tf.sparse.to_dense(label2_hot),
-            tf.sparse.to_dense(label3_hot),
-            tf.sparse.to_dense(label4_hot),
-            tf.sparse.to_dense(label5_hot)
-        ]
-
-        return features,global_labels_list,local_labels_list
+        return features,global_labels_list
