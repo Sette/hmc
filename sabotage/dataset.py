@@ -47,8 +47,8 @@ class Dataset:
         ds = ds.prefetch(buffer_size=5)
         return df
 
-    @staticmethod
-    def __parse__(element):
+   
+    def __parse__(self,element):
         data = {
             'label1': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
             'label2': tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True),
@@ -78,7 +78,7 @@ class Dataset:
         inp = {"features": content['features']}
         
         
-        for i in self.num_nodes_per_level:
+        for i in self.num_classes_per_node:
             print(f'nodes per level: {i}')
 
         labels = {
