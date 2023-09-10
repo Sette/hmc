@@ -89,4 +89,4 @@ class Dataset:
             for node in range(len(num_classes)):
                 labels.update({f'level-{level}-node-{node}': level_labels[level]})
 
-        return inp, label2[0]
+        return inp, labels

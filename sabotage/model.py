@@ -50,7 +50,7 @@ def build_level_classifier(x, levels_size, dropout, input_shape=1024, name='defa
 def build_node_classifier(x, num_classes, node, level, dropout, input_shape=256):
     x: object = Dense(input_shape, activation='relu')(x)
     x = Dropout(dropout)(x)
-    x = Dense(num_classes, activation='softmax', name=f'{level+1}-{node}-local')(x)
+    x = Dense(num_classes, activation='softmax', name=f'level-{level}-node-{node}')(x)
 
     return x
 
@@ -83,7 +83,6 @@ def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: li
         node_losses = []
         for level in range(len(num_nodes_per_level)):
             num_nodes = num_nodes_per_level[level]
-            num_classes = num_classes_per_node[level]
             level_true = y_true[level]
             level_pred = y_pred[level]
             level_loss = tf.keras.losses.CategoricalCrossentropy()(level_true, level_pred)
