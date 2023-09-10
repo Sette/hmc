@@ -54,48 +54,30 @@ def build_node_classifier(x, num_classes, node, level, dropout, input_shape=256)
 
     return x
 
-
-
-
 # Definição do modelo
 def build_hierarchical_model(num_nodes_per_level: list, num_classes_per_node: list, sequence_size: int = 1280, dropout: float = 0.1) -> tf.keras.models.Model:
     """
-
     :rtype: tf.keras.models.Model
     """
     input_shape = (sequence_size, 1)
     music = Input(shape=input_shape, dtype=tf.float32, name="features")
     fcn_size = 1024
-
     x: object = build_cnn(music, input_shape)
-    
-    
     # Camadas para cada nível da hierarquia
     level_outputs = []
     prev_level_output = x
-    
-    
     for level in range(len(num_nodes_per_level)):
         node_outputs = []
         num_nodes = num_nodes_per_level[level]
         num_classes = num_classes_per_node[level]
         for node in range(num_nodes):
-            # Possivel rede conv ou afins
-            # node_conv = layers.Conv2D(128, kernel_size=(3, 3), activation="relu")(prev_level_output)
-            # node_flatten = layers.Flatten()(node_conv)
-            
             node_output = build_node_classifier(prev_level_output, num_classes[node], node, level, dropout, input_shape=256)
-            
             node_outputs.append(node_output)
-
         prev_level_output = layers.concatenate(node_outputs)
         level_outputs.extend(node_outputs)
-    
-    
     # Concatenação das saídas de todos os níveis
     # merged_output = layers.concatenate(level_outputs)
 
-    
     def hierarchical_loss(y_true, y_pred):
         losses = []
         node_losses = []
