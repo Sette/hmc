@@ -43,8 +43,10 @@ def run(args: object):
     } 
 
     model = build_hierarchical_model(**params)
-    ds_train = Dataset(args.trainset_pattern, args.epochs,args.batch_size,num_nodes_per_level, num_classes_per_node).build(df=False)
-    ds_validation = Dataset(args.valset_pattern, args.epochs,args.batch_size,num_nodes_per_level, num_classes_per_node).build(df=False)
+    ds_validation = Dataset(args.valset_pattern, args.epochs,args.batch_size,num_nodes_per_level,
+                            num_classes_per_node).build(df=False)
+    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size, num_nodes_per_level,
+                       num_classes_per_node).build(df=False)
     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
     model.fit(ds_train,
               validation_data=ds_validation,

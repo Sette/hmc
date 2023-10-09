@@ -44,7 +44,7 @@ class Dataset:
             return load_dataset(ds)
         ds = ds.batch(self.batch_size, drop_remainder=False)
         ds = ds.prefetch(buffer_size=5)
-        return df
+        return ds
 
     def __parse__(self, element):
         data = {
