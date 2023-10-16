@@ -43,15 +43,31 @@ def run(args: object):
 
     print(params)
     model = build_model(**params)
-    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
-    ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
-    callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
-    model.fit(ds_train,
-              validation_data=ds_validation,
-              steps_per_epoch=metadata['trainset_count'] // args.batch_size,
-              validation_steps=metadata['validationset_count'] // args.batch_size,
-              epochs=args.epochs,
-              max_queue_size=args.max_queue_size,
-              workers=cpu_count(),
-              use_multiprocessing=True,
-              callbacks=callbacks)
+    
+    tf.keras.utils.plot_model(
+        model,
+        to_file="model.png",
+        show_shapes=False,
+        show_dtype=False,
+        show_layer_names=True,
+        rankdir="TB",
+        expand_nested=False,
+        dpi=96,
+        layer_range=None,
+        show_layer_activations=False,
+        show_trainable=False,
+    )
+    
+    
+#     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
+#     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
+#     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
+#     model.fit(ds_train,
+#               validation_data=ds_validation,
+#               steps_per_epoch=metadata['trainset_count'] // args.batch_size,
+#               validation_steps=metadata['validationset_count'] // args.batch_size,
+#               epochs=args.epochs,
+#               max_queue_size=args.max_queue_size,
+#               workers=cpu_count(),
+#               use_multiprocessing=True,
+#               callbacks=callbacks)

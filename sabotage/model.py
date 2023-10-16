@@ -77,8 +77,10 @@ def build_model(levels_size: dict, sequence_size: int = 1280, dropout: float = 0
     ], name="Essentia")
 
     #     _load_weights(model, weights_path)
+    
+    # optimizer = Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
 
-    model.compile(optimizer=Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0),
+    model.compile(optimizer= 'adam',
                   loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
