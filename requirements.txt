@@ -1,8 +1,6 @@
-tensorflow
-keras
-tqdm
-pandas
-numpy
-scikit-learn
-ipywidgets
-essentia
+tqdm==4.66.1
+pandas==2.2.0
+numpy==1.24.3
+scikit-learn==1.4.0
+ipywidgets==8.1.1
+git+https://github.com/MTG/essentia.git
