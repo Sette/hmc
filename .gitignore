@@ -357,3 +357,5 @@ MigrationBackup/
 
 #notebooks
 .ipynb_checkpoints/
+.virtual_documents/
+.idea/
