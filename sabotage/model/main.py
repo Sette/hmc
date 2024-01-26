@@ -2,8 +2,7 @@ import os
 import pandas as pd
 from datetime import datetime as dt
 
-from sabotage.arguments import  build
-from sabotage.train import run
+from sabotage.model.train import run
 
 import tensorflow as tf
 
@@ -15,7 +14,7 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
 
 base_path = "/mnt/disks/data/fma/trains"
-id = "hierarchical_local_sample"
+id = "hierarchical_single"
 
 
 train_path = os.path.join(base_path,id)
@@ -28,22 +27,21 @@ args = pd.Series({
     "batch_size":64,
     "epochs":10,
     "dropout":0.5,
-    'patience':3,
-    'max_queue_size':64,
     "labels_path": labels_path,
     "metadata_path": metadata_path,
     "trainset_pattern": os.path.join(tfrecords_path,'train'),
-    "testset_pattern": os.path.join(tfrecords_path,'test'),
+    "testset_pattern": os.path.join(tfrecords_path,'train'),
     "valset_pattern": os.path.join(tfrecords_path,'val')
 })
 
 
 if __name__ == '__main__':
     time_start = dt.utcnow()
-    print("[{}] Experiment started at {}".format(id, time_start.strftime("%H:%M:%S")))
+    print("[{}] Experiment started at {}".format(arguments.job_name, time_start.strftime("%H:%M:%S")))
     print(".......................................")
+    print(args)
     run(args)
     time_end = dt.utcnow()
     time_elapsed = time_end - time_start
     print(".......................................")
-    print("[{}] Experiment finished at {} / elapsed time {}s".format(id, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))
+    print("[{}] Experiment finished at {} / elapsed time {}s".format(arguments.job_name, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))

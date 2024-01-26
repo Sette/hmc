@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "hierarchical multi-label classification"
+version = "0.1.0"
+description = "Hierarchical multi-label classification tensorflow framework."
+authors = ["sette <bruno.sette@ufscar.br>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

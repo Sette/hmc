@@ -11,9 +11,9 @@ from sklearn.metrics import f1_score, roc_curve, auc, precision_recall_fscore_su
 
 from keras.callbacks import Callback
 
-from sabotage.json_encoder import NpEncoder
+from sabotage.model.json_encoder import NpEncoder
 # from b2w.black_magic.minos.helpers import os.path.join
-from sabotage.prediction import Predictor
+from sabotage.model.prediction import Predictor
 
 
 class ValidateCallback(Callback):

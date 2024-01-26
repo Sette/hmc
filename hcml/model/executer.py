@@ -2,8 +2,7 @@ import os
 import pandas as pd
 from datetime import datetime as dt
 
-from sabotage.arguments import  build
-from sabotage.train import run
+from sabotage.model.train import run
 
 import tensorflow as tf
 

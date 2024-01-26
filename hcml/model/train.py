@@ -1,18 +1,11 @@
 import json
 import os
 
-
-from keras import Model
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 
-from multiprocessing import cpu_count
-
-from sabotage.model import build_model
+from sabotage.model.model import build_model
 # from sabotage.model.callback import ValidateCallback, BackupAndRestoreCheckpoint
-from sabotage.dataset import Dataset
-
-from keras.callbacks import EarlyStopping
 
 print("========================= Tensorflow =========================")
 print("GPU is available: {}".format(tf.test.is_gpu_available()))
