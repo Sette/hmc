@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "hierarchical multi-label classification"
+version = "0.1.0"
+description = "Hierarchical multi-label classification tensorflow framework."
+authors = ["sette <bruno.sette@ufscar.br>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+
+# Issue between poetry and tensorflow metadata since >=2.11
+# This is a temporary workaround
+# related to https://github.com/python-poetry/poetry/issues/8271
+# Inspired from https://github.com/tensorflow/tensorflow/blob/adb39b04e9cb116df4659a7e2de9eea27e62f25c/tensorflow/tools/pip_package/setup.py#L148-L162
+setuptools = "^69.0.3"
+tqdm = "4.66.1"
+ipywidgets = "8.1.1"
+numpy = "^1.26.4"
+pandas = "^2.2.2"
+jupyterlab = "^4.1.8"
+tensorflow = "^2.16.1"
+jupyterlab-git = "^0.50.0"
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
