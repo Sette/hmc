@@ -1,14 +1,14 @@
 import json
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 
-from sabotage.model.model import build_model
+from .model import build_model
 # from sabotage.model.callback import ValidateCallback, BackupAndRestoreCheckpoint
 
 print("========================= Tensorflow =========================")
-print("GPU is available: {}".format(tf.test.is_gpu_available()))
+print("GPUs availables: {}".format(len(tf.config.list_physical_devices('GPU'))))
 print("==============================================================")
 
 
