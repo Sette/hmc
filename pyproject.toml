@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hierarchical multi-label classification"
-version = "0.1.0"
+version = "0.1.1"
 description = "Hierarchical multi-label classification tensorflow framework."
 authors = ["sette <bruno.sette@ufscar.br>"]
 readme = "README.md"

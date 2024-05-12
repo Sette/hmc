@@ -22,11 +22,10 @@ def run(args: object):
     with open(args.labels_path, 'r') as f:
         labels = json.loads(f.read())
 
-    levels_size = {'level1': labels['label1_count'] ,
-                   'level2': labels['label2_count'] ,
-                   'level3': labels['label3_count'] ,
-                   'level4': labels['label4_count'] ,
-                   'level5': labels['label5_count'] }
+    levels_size = {'level1': labels['label_1_count'] ,
+                   'level2': labels['label_2_count'] ,
+                   'level3': labels['label_3_count'] ,
+                   'level4': labels['label_4_count'] }
 
     params: dict = {
         'levels_size': levels_size,

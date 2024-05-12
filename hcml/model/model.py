@@ -38,9 +38,9 @@ def build_cnn(feature, input_shape):
 def build_classification(x, levels_size, dropout, input_shape=1024, name='default'):
     x: object = Dense(input_shape, activation='relu')(x)
     x = Dropout(dropout)(x)
-    x = Dense(input_shape/2, activation='relu')(x)
+    x = Dense(int(input_shape/2), activation='relu')(x)
     x = Dropout(dropout)(x)
-    x = Dense(input_shape/4, activation='relu')(x)
+    x = Dense(int(input_shape/4), activation='relu')(x)
     x = Dropout(dropout)(x)
     x = Dense(levels_size[name], activation='softmax', name=name+'_output')(x)
 

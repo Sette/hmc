@@ -6,23 +6,28 @@ import os
 
 BUFFER_SIZE = 10
 
-def load_dataset(dataset):
-    df = pd.DataFrame(
-        dataset.as_numpy_iterator(),
-        columns=['level1_output','level2_output',\
-                 'level3_output','level4_output','features']
-    )
-
-    df.dropna(inplace=True)
-
-    return df
 
 
 class Dataset:
-    def __init__(self,files,epochs, batch_size):
+    def __init__(self,files,epochs, batch_size,depth):
         self.epochs = epochs
         self.batch_size = batch_size
         self.files = files
+        self.depth = depth
+
+    def load_dataframe(self, dataset):
+        columns = ['features','track_id']
+        for level in range(1, self.depth+1):
+            columns.append(f'level{level}_output')
+        
+        df = pd.DataFrame(
+            dataset.as_numpy_iterator(),
+            columns=columns
+        )
+    
+        df.dropna(inplace=True)
+    
+        return df
 
     def build(self,df=False):
         
@@ -46,7 +51,7 @@ class Dataset:
         ds = ds.map(self.__parse__, num_parallel_calls=None)
 
         if df==True:
-            return load_dataset(ds)
+            return self.load_dataframe(ds)
         
         ds = ds.batch(self.batch_size,drop_remainder=False)
         
@@ -54,42 +59,26 @@ class Dataset:
                       
         ds = ds.prefetch(buffer_size=5)
         
-       
         
         return ds
-    
 
-    @staticmethod
-    def __parse__(element):
+    def __parse__(self, element):
+        data = {}
+        for level in range(1, self.depth+1):
+            data[f'label{level}'] = tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True)
         
-        data = {
-            'label1': tf.io.FixedLenFeature([], tf.int64),
-            'label2': tf.io.FixedLenFeature([], tf.int64),
-            'label3': tf.io.FixedLenFeature([], tf.int64),
-            'label4': tf.io.FixedLenFeature([], tf.int64),
+        data.update({
             'features': tf.io.FixedLenFeature([1280], tf.float32),
             'track_id' : tf.io.FixedLenFeature([], tf.int64),
-        }
+        })
         
         content = tf.io.parse_single_example(element, data)
 
-        track_id = content['track_id']
-        label1 = tf.cast(content['label1'], tf.int32)
+        labels = {}
+        for level in range(1, self.depth+1):
+            local_label = content[f'label{level}']
+            labels.update({f'level{level}_output':local_label})
 
-        label2 = tf.cast(content['label2'], tf.int32)
-
-        label3 = tf.cast(content['label3'], tf.int32)
-
-        label4 = tf.cast(content['label4'], tf.int32)
-
-        
         inp = {"features":content['features'] }
-
-
-        labels = {'level1_output': label1,
-               'level2_output': label2,
-               'level3_output': label3,
-               'level4_output': label4,
-        }
 
         return inp, labels
