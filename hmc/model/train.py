@@ -3,8 +3,10 @@ import os
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
+from keras.callbacks import EarlyStopping
 
 from .model import build_model
+from hmc.dataset import Dataset
 # from sabotage.model.callback import ValidateCallback, BackupAndRestoreCheckpoint
 
 print("========================= Tensorflow =========================")
@@ -49,17 +51,17 @@ def run(args: object):
         show_layer_activations=False,
         show_trainable=False,
     )
+
+    depth = len(params['levels_size'])
     
-    
-#     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size).build(df=False)
-#     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size).build(df=False)
-#     callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
-#     model.fit(ds_train,
-#               validation_data=ds_validation,
-#               steps_per_epoch=metadata['trainset_count'] // args.batch_size,
-#               validation_steps=metadata['validationset_count'] // args.batch_size,
-#               epochs=args.epochs,
-#               max_queue_size=args.max_queue_size,
-#               workers=cpu_count(),
-#               use_multiprocessing=True,
-#               callbacks=callbacks)
+    ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size, params['levels_size']).build(df=False)
+    ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size, params['levels_size']).build(df=False)
+    callbacks = [EarlyStopping(monitor='loss', patience=args.patience, verbose=1)]
+    model.fit(ds_train,
+              validation_data=ds_validation,
+              steps_per_epoch=metadata['trainset_count'] // args.batch_size,
+              validation_steps=metadata['validationset_count'] // args.batch_size,
+              epochs=args.epochs,
+              callbacks=callbacks)
+
+    model.save(os.path.join(args.model_path, 'best_binary.h5'))
