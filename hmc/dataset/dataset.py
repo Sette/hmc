@@ -1,8 +1,3 @@
-import tensorflow as tf
-import multiprocessing
-import pandas as pd
-import os
-
 
 
 BUFFER_SIZE = 10
@@ -92,10 +87,9 @@ class Dataset:
         for level in range(1, self.depth+1):
             local_label = content[f'label{level}']
             binary_label = self.convert_to_binary(local_label, self.levels_size[f'level{level}'])
-            labels.update({f'level{level}_output': binary_label})
-
+            labels.update({f'level{level}': binary_label})
+        
 
         inp = {"features":content['features'] }
 
         return inp, labels
-
