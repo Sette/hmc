@@ -24,13 +24,10 @@ def run(args: object):
     with open(args.labels_path, 'r') as f:
         labels = json.loads(f.read())
 
-    levels_size = {'level1': labels['label_1_count'] ,
-                   'level2': labels['label_2_count'] ,
-                   'level3': labels['label_3_count'] ,
-                   'level4': labels['label_4_count'] }
+    print(labels['levels_size'])
 
     params: dict = {
-        'levels_size': levels_size,
+        'levels_size': labels['levels_size'],
         'sequence_size': metadata['sequence_size'],
         'dropout': args.dropout
     }
@@ -52,7 +49,6 @@ def run(args: object):
         show_trainable=False,
     )
 
-    depth = len(params['levels_size'])
     
     ds_train = Dataset(args.trainset_pattern, args.epochs, args.batch_size, params['levels_size']).build(df=False)
     ds_validation = Dataset(args.valset_pattern, args.epochs, args.batch_size, params['levels_size']).build(df=False)

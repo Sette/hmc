@@ -21,6 +21,8 @@ jupyterlab = "^4.1.8"
 tensorflow = "^2.16.1"
 jupyterlab-git = "^0.50.0"
 pydot = "^2.0.0"
+jupyter = "^1.0.0"
+scikit-learn = "^1.5.0"
 
 
 

@@ -1,12 +1,16 @@
+# %%
 import os
 import pandas as pd
+import tensorflow as tf
 from datetime import datetime as dt
 
+from hmc.model.arguments import  build
 from hmc.model.train import run
 
-import tensorflow as tf
+# %%
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
-
+# %%
 # Set python level verbosity
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 
@@ -14,9 +18,10 @@ tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.DEBUG)
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = str(tf.compat.v1.logging.DEBUG)
 
 base_path = "/mnt/disks/data/fma/trains"
-id = "hierarchical_all"
+id = "hierarchical_tworoots_dev"
 
 
+# %%
 train_path = os.path.join(base_path,id)
 tfrecords_path =os.path.join(train_path,'tfrecords')
 metadata_path = os.path.join(train_path,"metadata.json")
@@ -24,10 +29,10 @@ labels_path = os.path.join(train_path,"labels.json")
 
 
 args = pd.Series({
-    "batch_size":32,
+    "batch_size":64,
     "epochs":10,
-    "dropout":0.1,
-    'patience':1,
+    "dropout":0.7,
+    'patience':3,
     'max_queue_size':64,
     "labels_path": labels_path,
     "metadata_path": metadata_path,
@@ -37,13 +42,16 @@ args = pd.Series({
 })
 
 
-if __name__ == '__main__':
-    time_start = dt.utcnow()
-    print("[{}] Experiment started at {}".format(id, time_start.strftime("%H:%M:%S")))
-    print(".......................................")
-    print(args)
-    run(args)
-    time_end = dt.utcnow()
-    time_elapsed = time_end - time_start
-    print(".......................................")
-    print("[{}] Experiment finished at {} / elapsed time {}s".format(id, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))
+# %%
+
+time_start = dt.utcnow()
+print("[{}] Experiment started at {}".format(id, time_start.strftime("%H:%M:%S")))
+print(".......................................")
+print(args)
+run(args)
+time_end = dt.utcnow()
+time_elapsed = time_end - time_start
+print(".......................................")
+print("[{}] Experiment finished at {} / elapsed time {}s".format(id, time_end.strftime("%H:%M:%S"), time_elapsed.total_seconds()))
+
+

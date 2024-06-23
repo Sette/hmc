@@ -1,10 +1,14 @@
 
+import pandas as pd
+import tensorflow as tf
+
+import os
 
 BUFFER_SIZE = 10
 
 
 class Dataset:
-    def __init__(self,files,epochs, batch_size, levels_size):
+    def __init__(self ,files,epochs, batch_size, levels_size):
         self.epochs = epochs
         self.batch_size = batch_size
         self.files = files
@@ -26,7 +30,7 @@ class Dataset:
 
     def build(self,df=False):
         
-        files = [os.path.join(self.files,file) for file in os.listdir(self.files)]
+        files = [os.path.join(self.files, file) for file in os.listdir(self.files)]
 
         ds = tf.data.TFRecordDataset(files)
         
@@ -51,16 +55,20 @@ class Dataset:
         ds = ds.batch(self.batch_size,drop_remainder=False)
         
         
-                      
         ds = ds.prefetch(buffer_size=5)
         
         
         return ds
 
-    def convert_to_binary(self, label, num_classes):
+    def convert_to_binary(self, labels, num_classes):
+        # Verifica se o tensor é esparso
+        if isinstance(labels, tf.SparseTensor):
+            # Converte para tensor denso
+            labels = tf.sparse.to_dense(labels, default_value=-1)
+
         # Filtrar índices negativos
-        valid_indices = tf.boolean_mask(label, label >= 0)
-        
+        valid_indices = tf.boolean_mask(labels, labels != -1)
+    
         # Inicializar vetor binário
         binary_label = tf.zeros(num_classes, dtype=tf.float32)
         
@@ -70,11 +78,13 @@ class Dataset:
         binary_label = tf.tensor_scatter_nd_update(binary_label, indices, updates)
 
         return binary_label
+    
+    
 
     def __parse__(self, element):
         data = {}
         for level in range(1, self.depth+1):
-            data[f'label{level}'] = tf.io.FixedLenSequenceFeature([], tf.int64, allow_missing=True)
+            data[f'level{level}'] = tf.io.VarLenFeature(tf.int64)
         
         data.update({
             'features': tf.io.FixedLenFeature([1280], tf.float32),
@@ -84,9 +94,12 @@ class Dataset:
         content = tf.io.parse_single_example(element, data)
 
         labels = {}
-        for level in range(1, self.depth+1):
-            local_label = content[f'label{level}']
-            binary_label = self.convert_to_binary(local_label, self.levels_size[f'level{level}'])
+        print(f'Tamanho da arvore no dataset {self.depth}')
+        for level, idx in enumerate(range(0, self.depth), start=1):
+            local_label = content[f'level{level}']
+            print(f'Local label: {local_label}')
+            binary_label = self.convert_to_binary(local_label, self.levels_size[idx])
+            print(binary_label)
             labels.update({f'level{level}': binary_label})
         
 
